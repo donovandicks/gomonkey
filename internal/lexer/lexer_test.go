@@ -110,8 +110,10 @@ func TestNextToken(t *testing.T) {
 		},
 	}
 
-	for _, tc := range cases {
+	for _, testCase := range cases {
+		tc := testCase
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			l := lexer.NewLexer(tc.input)
 			for _, exp := range tc.expTokens {
 				tok := l.NextToken()
