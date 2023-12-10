@@ -352,6 +352,48 @@ func TestParser(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "function literal",
+			input: "fn(x, y) { x + y; }",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.FUNCTION, Literal: "fn"},
+					Expression: &ast.FunctionLiteral{
+						Token: token.Token{Type: token.FUNCTION, Literal: "fn"},
+						Parameters: []*ast.Identifier{
+							{
+								Token: token.Token{Type: token.IDENT, Literal: "x"},
+								Value: "x",
+							},
+							{
+								Token: token.Token{Type: token.IDENT, Literal: "y"},
+								Value: "y",
+							},
+						},
+						Body: &ast.BlockStatement{
+							Token: token.Token{Type: token.IDENT, Literal: "x"},
+							Statements: []ast.Statement{
+								&ast.ExpressionStatement{
+									Token: token.Token{Type: token.IDENT, Literal: "x"},
+									Expression: &ast.InfixExpression{
+										Token: token.Token{Type: token.PLUS, Literal: "+"},
+										Left: &ast.Identifier{
+											Token: token.Token{Type: token.IDENT, Literal: "x"},
+											Value: "x",
+										},
+										Operator: "+",
+										Right: &ast.Identifier{
+											Token: token.Token{Type: token.IDENT, Literal: "y"},
+											Value: "y",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range cases {

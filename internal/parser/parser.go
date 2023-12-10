@@ -40,6 +40,7 @@ func NewParser(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
+	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
@@ -203,6 +204,60 @@ func (p *Parser) parseIfExpression() ast.Expression {
 	}
 
 	return expr
+}
+
+func (p *Parser) parseFunctionParameters() []*ast.Identifier {
+	idents := []*ast.Identifier{}
+
+	if p.expectNext(token.RPAREN) {
+		p.readToken() // advance to the closing ')'
+		return idents
+	}
+
+	p.readToken()
+
+	ident := &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
+	idents = append(idents, ident)
+
+	for p.expectNext(token.COMMA) {
+		p.readToken() // advance to the ','
+		p.readToken() // advance to the next ident
+
+		ident := &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
+		idents = append(idents, ident)
+	}
+
+	if !p.expectNext(token.RPAREN) {
+		p.addError(ErrMissingCloser{expected: ")"})
+		return nil
+	}
+
+	p.readToken()
+	return idents
+}
+
+func (p *Parser) parseFunctionLiteral() ast.Expression {
+	fn := &ast.FunctionLiteral{Token: p.currToken}
+
+	if !p.expectNext(token.LPAREN) {
+		p.addError(ErrMissingOpener{expected: "("})
+		return nil
+	}
+
+	p.readToken() // advance to the '('
+
+	fn.Parameters = p.parseFunctionParameters()
+
+	// Currently on the ')' if one was present
+	if !p.expectNext(token.LBRACE) {
+		p.addError(ErrMissingOpener{expected: "{"})
+		return nil
+	}
+
+	p.readToken() // advance to the '{'
+	fn.Body = p.parseBlockStatement()
+
+	return fn
 }
 
 func (p *Parser) parseExpression(precedence OperatorPrecedence) ast.Expression {
