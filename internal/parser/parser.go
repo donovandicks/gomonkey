@@ -207,7 +207,7 @@ func (p *Parser) parseIfExpression() ast.Expression {
 }
 
 func (p *Parser) parseFunctionParameters() []*ast.Identifier {
-	idents := []*ast.Identifier{}
+	var idents []*ast.Identifier
 
 	if p.expectNext(token.RPAREN) {
 		p.readToken() // advance to the closing ')'

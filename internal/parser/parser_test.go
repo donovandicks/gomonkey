@@ -353,7 +353,7 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
-			name:  "function literal",
+			name:  "function literal: multiple params",
 			input: "fn(x, y) { x + y; }",
 			expected: []ast.Statement{
 				&ast.ExpressionStatement{
@@ -386,6 +386,60 @@ func TestParser(t *testing.T) {
 											Token: token.Token{Type: token.IDENT, Literal: "y"},
 											Value: "y",
 										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "function literal: one param",
+			input: "fn(x) { x; }",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.FUNCTION, Literal: "fn"},
+					Expression: &ast.FunctionLiteral{
+						Token: token.Token{Type: token.FUNCTION, Literal: "fn"},
+						Parameters: []*ast.Identifier{
+							{
+								Token: token.Token{Type: token.IDENT, Literal: "x"},
+								Value: "x",
+							},
+						},
+						Body: &ast.BlockStatement{
+							Token: token.Token{Type: token.IDENT, Literal: "x"},
+							Statements: []ast.Statement{
+								&ast.ExpressionStatement{
+									Token: token.Token{Type: token.IDENT, Literal: "x"},
+									Expression: &ast.Identifier{
+										Token: token.Token{Type: token.IDENT, Literal: "x"},
+										Value: "x",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "function literal: no params",
+			input: "fn() { 5; }",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.FUNCTION, Literal: "fn"},
+					Expression: &ast.FunctionLiteral{
+						Token: token.Token{Type: token.FUNCTION, Literal: "fn"},
+						Body: &ast.BlockStatement{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Statements: []ast.Statement{
+								&ast.ExpressionStatement{
+									Token: token.Token{Type: token.INT, Literal: "5"},
+									Expression: &ast.IntegerLiteral{
+										Token: token.Token{Type: token.INT, Literal: "5"},
+										Value: 5,
 									},
 								},
 							},
