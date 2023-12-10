@@ -243,14 +243,30 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
-			name:         "invalid let statement: missing identifier",
-			input:        "let = 10;",
-			expectedErrs: []string{"expected next token to be IDENT, got = instead"},
+			name:  "invalid let statement: missing identifier",
+			input: "let = 10;",
+			expectedErrs: []string{
+				"expected next token to be IDENT, got = instead",
+				"no prefix parser found for =",
+			},
 		},
 		{
 			name:         "invalid let statement: missing identifier and assigner",
 			input:        "let 10;",
 			expectedErrs: []string{"expected next token to be IDENT, got INT instead"},
+		},
+		{
+			name:  "valid boolean literal",
+			input: "true;",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.TRUE, Literal: "true"},
+					Expression: &ast.Boolean{
+						Token: token.Token{Type: token.TRUE, Literal: "true"},
+						Value: true,
+					},
+				},
+			},
 		},
 	}
 
@@ -334,6 +350,21 @@ func TestParser_OperatorPrecedence(t *testing.T) {
 			name:     "comparison with unary and binary operations",
 			input:    "a * -b != -c / d",
 			expected: "((a * (-b)) != ((-c) / d))",
+		},
+		{
+			name:     "comparison with boolean literals",
+			input:    "true != false",
+			expected: "(true != false)",
+		},
+		{
+			name:     "mixed numeric, identifiers, and boolean literals",
+			input:    "3 > a != true",
+			expected: "((3 > a) != true)",
+		},
+		{
+			name:     "grouped expression",
+			input:    "(5 + 5) * 2",
+			expected: "((5 + 5) * 2)",
 		},
 	}
 

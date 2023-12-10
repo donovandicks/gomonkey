@@ -31,3 +31,11 @@ type ErrNoPrefixParser struct {
 func (e ErrNoPrefixParser) Error() string {
 	return fmt.Sprintf("no prefix parser found for %s", e.operator)
 }
+
+type ErrMissingCloser struct {
+	expected string
+}
+
+func (e ErrMissingCloser) Error() string {
+	return fmt.Sprintf("missing closing '%s'", e.expected)
+}

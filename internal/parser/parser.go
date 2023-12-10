@@ -36,6 +36,9 @@ func NewParser(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+	p.registerPrefix(token.TRUE, p.parseBoolean)
+	p.registerPrefix(token.FALSE, p.parseBoolean)
+	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
@@ -110,6 +113,10 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	return lit
 }
 
+func (p *Parser) parseBoolean() ast.Expression {
+	return &ast.Boolean{Token: p.currToken, Value: p.currToken.Type == token.TRUE}
+}
+
 func (p *Parser) parseLetStatement() ast.Statement {
 	stmt := &ast.LetStatement{Token: p.currToken}
 
@@ -179,12 +186,26 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	return expr
 }
 
+func (p *Parser) parseGroupedExpression() ast.Expression {
+	p.readToken() // advance past the '('
+
+	expr := p.parseExpression(LOWEST)
+
+	p.readToken() // advance to the next token after the expression
+
+	if p.currToken.Type != token.RPAREN {
+		// expression was parsed but group did not close
+		p.addError(ErrMissingCloser{expected: ")"})
+		return nil
+	}
+
+	return expr
+}
+
 func (p *Parser) parseExpression(precedence OperatorPrecedence) ast.Expression {
 	prefix := p.prefixParseFns[p.currToken.Type]
 	if prefix == nil {
-		if precedence == PREFIX {
-			p.addError(ErrNoPrefixParser{operator: p.currToken.Literal})
-		}
+		p.addError(ErrNoPrefixParser{operator: p.currToken.Literal})
 		return nil
 	}
 
