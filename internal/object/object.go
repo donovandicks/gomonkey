@@ -10,6 +10,12 @@ const (
 	OBJ_NULL    ObjectType = "NULL"
 )
 
+var (
+	TrueBool   = &Boolean{Value: true}
+	FalseBool  = &Boolean{Value: false}
+	NullObject = &Null{}
+)
+
 type Object interface {
 	Type() ObjectType
 	Inspect() string
@@ -27,12 +33,17 @@ type Boolean struct {
 	Value bool
 }
 
-func (b *Boolean) Inspect() string       { return fmt.Sprintf("%t", b.Value) }
-func (b *Boolean) Type() ObjectType      { return OBJ_BOOLEAN }
-func NewBooleanObject(val bool) *Boolean { return &Boolean{Value: val} }
+func (b *Boolean) Inspect() string  { return fmt.Sprintf("%t", b.Value) }
+func (b *Boolean) Type() ObjectType { return OBJ_BOOLEAN }
+func BoolFromNative(val bool) *Boolean {
+	if val {
+		return TrueBool
+	}
+
+	return FalseBool
+}
 
 type Null struct{}
 
 func (n *Null) Inspect() string  { return "null" }
 func (n *Null) Type() ObjectType { return OBJ_BOOLEAN }
-func NewNullObject() *Null       { return &Null{} }
