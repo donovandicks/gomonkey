@@ -78,58 +78,17 @@ func TestParser_LetStatement(t *testing.T) {
 	}
 }
 
-func TestParser_ReturnStatement(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name           string
-		input          string
-		expectedLength int
-		expectedErrs   []string
-	}{
-		{
-			name: "valid return statements",
-			input: `
-			return 5;
-			return 10;
-			return 100;
-			`,
-			expectedLength: 3,
-		},
-	}
-
-	for _, testCase := range cases {
-		tc := testCase
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			l := lexer.NewLexer(tc.input)
-			p := parser.NewParser(l)
-
-			program := p.ParseProgram()
-			assert.NotNil(t, program)
-			assert.Equal(t, tc.expectedLength, len(program.Statements))
-			assert.Equal(t, tc.expectedErrs, p.Errors())
-
-			for _, s := range program.Statements {
-				stmt, ok := s.(*ast.ReturnStatement)
-				assert.True(t, ok)
-				assert.Equal(t, "return", stmt.TokenLiteral())
-			}
-		})
-	}
-}
-
 func TestParser_ExpressionStatements(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name     string
-		input    string
-		expected []ast.Statement
+		name         string
+		input        string
+		expected     []ast.Statement
+		expectedErrs []string
 	}{
 		{
-			name:  "valid identifiers",
+			name:  "valid identifier",
 			input: "foo;",
 			expected: []ast.Statement{
 				&ast.ExpressionStatement{
@@ -142,7 +101,7 @@ func TestParser_ExpressionStatements(t *testing.T) {
 			},
 		},
 		{
-			name:  "valid integer literals",
+			name:  "valid integer literal",
 			input: "5;",
 			expected: []ast.Statement{
 				&ast.ExpressionStatement{
@@ -154,19 +113,196 @@ func TestParser_ExpressionStatements(t *testing.T) {
 				},
 			},
 		},
-		// {
-		// 	name:  "valid return statements",
-		// 	input: "return 5;",
-		// 	expected: []ast.Statement{
-		// 		&ast.ReturnStatement{
-		// 			Token: token.Token{Type: token.RETURN, Literal: "return"},
-		// 			Value: &ast.IntegerLiteral{
-		// 				Token: token.Token{Type: token.INT, Literal: "5"},
-		// 				Value: 5,
-		// 			},
-		// 		},
-		// 	},
-		// },
+		{
+			name:  "prefix bang",
+			input: "!5;",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.BANG, Literal: "!"},
+					Expression: &ast.PrefixExpression{
+						Token:    token.Token{Type: token.BANG, Literal: "!"},
+						Operator: "!",
+						Right: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Value: 5,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "prefix minus",
+			input: "-5;",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.MINUS, Literal: "-"},
+					Expression: &ast.PrefixExpression{
+						Token:    token.Token{Type: token.MINUS, Literal: "-"},
+						Operator: "-",
+						Right: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Value: 5,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "infix addition",
+			input: "5 + 5",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.INT, Literal: "5"},
+					Expression: &ast.InfixExpression{
+						Token:    token.Token{Type: token.PLUS, Literal: "+"},
+						Operator: "+",
+						Left: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Value: 5,
+						},
+						Right: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Value: 5,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "infix subtraction",
+			input: "5 - 5",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.INT, Literal: "5"},
+					Expression: &ast.InfixExpression{
+						Token:    token.Token{Type: token.MINUS, Literal: "-"},
+						Operator: "-",
+						Left: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Value: 5,
+						},
+						Right: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Value: 5,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "infix multiplication",
+			input: "5 * 5",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.INT, Literal: "5"},
+					Expression: &ast.InfixExpression{
+						Token:    token.Token{Type: token.STAR, Literal: "*"},
+						Operator: "*",
+						Left: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Value: 5,
+						},
+						Right: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Value: 5,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "infix division",
+			input: "5 / 5",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.INT, Literal: "5"},
+					Expression: &ast.InfixExpression{
+						Token:    token.Token{Type: token.FSLASH, Literal: "/"},
+						Operator: "/",
+						Left: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Value: 5,
+						},
+						Right: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Value: 5,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "infix equals",
+			input: "5 == 5",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.INT, Literal: "5"},
+					Expression: &ast.InfixExpression{
+						Token:    token.Token{Type: token.EQ, Literal: "=="},
+						Operator: "==",
+						Left: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Value: 5,
+						},
+						Right: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Value: 5,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "infix not equals",
+			input: "5 != 5",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.INT, Literal: "5"},
+					Expression: &ast.InfixExpression{
+						Token:    token.Token{Type: token.NE, Literal: "!="},
+						Operator: "!=",
+						Left: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Value: 5,
+						},
+						Right: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "5"},
+							Value: 5,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "valid return statement",
+			input: "return 5;",
+			expected: []ast.Statement{
+				&ast.ReturnStatement{
+					Token: token.Token{Type: token.RETURN, Literal: "return"},
+					Value: &ast.IntegerLiteral{
+						Token: token.Token{Type: token.INT, Literal: "5"},
+						Value: 5,
+					},
+				},
+			},
+		},
+		{
+			name:  "valid let statement",
+			input: "let x = 5;",
+			expected: []ast.Statement{
+				&ast.LetStatement{
+					Token: token.Token{Type: token.LET, Literal: "let"},
+					Name: &ast.Identifier{
+						Token: token.Token{Type: token.IDENT, Literal: "x"},
+						Value: "x",
+					},
+					Value: &ast.IntegerLiteral{
+						Token: token.Token{Type: token.INT, Literal: "5"},
+						Value: 5,
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range cases {
@@ -182,6 +318,7 @@ func TestParser_ExpressionStatements(t *testing.T) {
 			assert.Nil(t, p.Errors())
 
 			assert.EqualValues(t, tc.expected, program.Statements)
+			assert.Equal(t, tc.expectedErrs, p.Errors())
 		})
 	}
 }

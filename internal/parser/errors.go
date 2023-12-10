@@ -23,3 +23,11 @@ type ErrParseError struct {
 func (e ErrParseError) Error() string {
 	return fmt.Sprintf("error attempting to parse %s as a valid %s", e.actual, e.expected)
 }
+
+type ErrNoPrefixParser struct {
+	operator string
+}
+
+func (e ErrNoPrefixParser) Error() string {
+	return fmt.Sprintf("no prefix parser found for %s", e.operator)
+}
