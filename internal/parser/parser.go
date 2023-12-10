@@ -340,7 +340,7 @@ func (p *Parser) parseLetStatement() ast.Statement {
 
 	stmt.Value = p.parseExpression(LOWEST)
 
-	for p.currToken.Type != token.SEMICOLON {
+	if p.expectNext(token.SEMICOLON) {
 		p.readToken()
 	}
 

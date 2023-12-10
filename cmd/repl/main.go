@@ -8,7 +8,7 @@ import (
 	"os/user"
 
 	"github.com/donovandicks/gomonkey/internal/lexer"
-	"github.com/donovandicks/gomonkey/internal/token"
+	"github.com/donovandicks/gomonkey/internal/parser"
 )
 
 const PROMPT = ">> "
@@ -26,10 +26,18 @@ func Start(in io.Reader, out io.Writer) {
 
 		line := scanner.Text()
 		l := lexer.NewLexer(line)
+		p := parser.NewParser(l)
 
-		for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
-			fmt.Fprintf(out, "%+v\n", tok)
+		program := p.ParseProgram()
+		if errs := p.Errors(); len(errs) != 0 {
+			for _, msg := range errs {
+				io.WriteString(out, "\t"+msg+"\n")
+			}
+			continue
 		}
+
+		io.WriteString(out, program.String())
+		io.WriteString(out, "\n")
 	}
 }
 
