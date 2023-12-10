@@ -29,4 +29,5 @@ var Precedence PrecedenceTable = PrecedenceTable{
 	token.MINUS:  SUM,
 	token.FSLASH: PRODUCT,
 	token.STAR:   PRODUCT,
+	token.LPAREN: CALL,
 }

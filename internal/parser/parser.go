@@ -50,6 +50,7 @@ func NewParser(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.NE, p.parseInfixExpression)
 	p.registerInfix(token.LT, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
+	p.registerInfix(token.LPAREN, p.parseCallExpression)
 
 	p.readToken()
 	p.readToken()
@@ -258,6 +259,41 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	fn.Body = p.parseBlockStatement()
 
 	return fn
+}
+
+func (p *Parser) parseCallArguments() []ast.Expression {
+	var args []ast.Expression
+
+	if p.expectNext(token.RPAREN) {
+		p.readToken() // advance to the closing ')'
+		return args
+	}
+
+	p.readToken()
+
+	args = append(args, p.parseExpression(LOWEST))
+
+	for p.expectNext(token.COMMA) {
+		p.readToken() // advance to the ','
+		p.readToken() // advance to the next expression
+
+		args = append(args, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectNext(token.RPAREN) {
+		p.addError(ErrMissingCloser{expected: ")"})
+		return nil
+	}
+
+	p.readToken()
+	return args
+}
+
+func (p *Parser) parseCallExpression(fn ast.Expression) ast.Expression {
+	expr := &ast.CallExpression{Token: p.currToken, Function: fn}
+	expr.Arguments = p.parseCallArguments()
+
+	return expr
 }
 
 func (p *Parser) parseExpression(precedence OperatorPrecedence) ast.Expression {

@@ -448,6 +448,70 @@ func TestParser(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "function call expression: multiple args",
+			input: "add(1, 2)",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.IDENT, Literal: "add"},
+					Expression: &ast.CallExpression{
+						Token: token.Token{Type: token.LPAREN, Literal: "("},
+						Function: &ast.Identifier{
+							Token: token.Token{Type: token.IDENT, Literal: "add"},
+							Value: "add",
+						},
+						Arguments: []ast.Expression{
+							&ast.IntegerLiteral{
+								Token: token.Token{Type: token.INT, Literal: "1"},
+								Value: 1,
+							},
+							&ast.IntegerLiteral{
+								Token: token.Token{Type: token.INT, Literal: "2"},
+								Value: 2,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "function call expression: one arg",
+			input: "add(1)",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.IDENT, Literal: "add"},
+					Expression: &ast.CallExpression{
+						Token: token.Token{Type: token.LPAREN, Literal: "("},
+						Function: &ast.Identifier{
+							Token: token.Token{Type: token.IDENT, Literal: "add"},
+							Value: "add",
+						},
+						Arguments: []ast.Expression{
+							&ast.IntegerLiteral{
+								Token: token.Token{Type: token.INT, Literal: "1"},
+								Value: 1,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "function call expression: no args",
+			input: "add()",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.IDENT, Literal: "add"},
+					Expression: &ast.CallExpression{
+						Token: token.Token{Type: token.LPAREN, Literal: "("},
+						Function: &ast.Identifier{
+							Token: token.Token{Type: token.IDENT, Literal: "add"},
+							Value: "add",
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range cases {
@@ -545,6 +609,11 @@ func TestParser_OperatorPrecedence(t *testing.T) {
 			name:     "grouped expression",
 			input:    "(5 + 5) * 2",
 			expected: "((5 + 5) * 2)",
+		},
+		{
+			name:     "call expression",
+			input:    "add(1, 2 + 3, 4 * 5 + 6)",
+			expected: "add(1, (2 + 3), ((4 * 5) + 6))",
 		},
 	}
 
