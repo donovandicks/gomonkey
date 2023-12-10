@@ -10,75 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testLetStatement(t *testing.T, s ast.Statement, name string) {
-	assert.Equal(t, "let", s.TokenLiteral())
-	stmt, ok := s.(*ast.LetStatement)
-	assert.True(t, ok)
-	assert.Equal(t, name, stmt.Name.Value)
-	assert.Equal(t, name, stmt.Name.TokenLiteral())
-}
-
-func testParserErrors(t *testing.T, p *parser.Parser, expectedErrs []string) {
-	errs := p.Errors()
-	assert.Equal(t, expectedErrs, errs)
-}
-
-func TestParser_LetStatement(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name           string
-		input          string
-		expectedLength int
-		expectedIdents []string
-		expectedErrs   []string
-	}{
-		{
-			name: "valid let statements",
-			input: `
-			let x = 5;
-			let y = 10;
-			let foobar = 1337;
-			`,
-			expectedLength: 3,
-			expectedIdents: []string{"x", "y", "foobar"},
-		},
-		{
-			name: "invalid let statements",
-			input: `
-			let x 5;
-			let = 10;
-			let 1;
-			`,
-			expectedErrs: []string{
-				"expected next token to be =, got INT instead",
-				"expected next token to be IDENT, got = instead",
-				"expected next token to be IDENT, got INT instead",
-			},
-		},
-	}
-
-	for _, testCase := range cases {
-		tc := testCase
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			l := lexer.NewLexer(tc.input)
-			p := parser.NewParser(l)
-
-			program := p.ParseProgram()
-
-			assert.NotNil(t, program)
-			assert.Equal(t, tc.expectedErrs, p.Errors(), "mismatched error count")
-			if len(tc.expectedIdents) > 0 {
-				for i, s := range program.Statements {
-					testLetStatement(t, s, tc.expectedIdents[i])
-				}
-			}
-		})
-	}
-}
-
-func TestParser_ExpressionStatements(t *testing.T) {
+func TestParser(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
@@ -303,6 +235,23 @@ func TestParser_ExpressionStatements(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "invalid let statement: missing assignment operator",
+			input: "let x 5;",
+			expectedErrs: []string{
+				"expected next token to be =, got INT instead",
+			},
+		},
+		{
+			name:         "invalid let statement: missing identifier",
+			input:        "let = 10;",
+			expectedErrs: []string{"expected next token to be IDENT, got = instead"},
+		},
+		{
+			name:         "invalid let statement: missing identifier and assigner",
+			input:        "let 10;",
+			expectedErrs: []string{"expected next token to be IDENT, got INT instead"},
+		},
 	}
 
 	for _, testCase := range cases {
@@ -315,10 +264,92 @@ func TestParser_ExpressionStatements(t *testing.T) {
 
 			program := p.ParseProgram()
 			assert.NotNil(t, program)
-			assert.Nil(t, p.Errors())
+			if tc.expectedErrs == nil {
+				assert.Nil(t, p.Errors())
+			} else {
+				assert.Equal(t, tc.expectedErrs, p.Errors())
+			}
 
-			assert.EqualValues(t, tc.expected, program.Statements)
-			assert.Equal(t, tc.expectedErrs, p.Errors())
+			if tc.expected != nil {
+				assert.EqualValues(t, tc.expected, program.Statements)
+			}
+		})
+	}
+}
+
+func TestParser_OperatorPrecedence(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "unary mixed with binary",
+			input:    "-a * b",
+			expected: "((-a) * b)",
+		},
+		{
+			name:     "multiple unary",
+			input:    "!-a",
+			expected: "(!(-a))",
+		},
+		{
+			name:     "multiple addition",
+			input:    "a + b + c",
+			expected: "((a + b) + c)",
+		},
+		{
+			name:     "addition and subtraction",
+			input:    "a + b - c",
+			expected: "((a + b) - c)",
+		},
+		{
+			name:     "multiple multiplication",
+			input:    "a * b * c",
+			expected: "((a * b) * c)",
+		},
+		{
+			name:     "multiplication and division",
+			input:    "a * b / c",
+			expected: "((a * b) / c)",
+		},
+		{
+			name:     "multiple in sequence",
+			input:    "a - b * c / d * e + f",
+			expected: "((a - (((b * c) / d) * e)) + f)",
+		},
+		{
+			name:     "multiple statements",
+			input:    "a + b; x * y",
+			expected: "(a + b)(x * y)",
+		},
+		{
+			name:     "comparison operations",
+			input:    "a > b == c > d",
+			expected: "((a > b) == (c > d))",
+		},
+		{
+			name:     "comparison with unary and binary operations",
+			input:    "a * -b != -c / d",
+			expected: "((a * (-b)) != ((-c) / d))",
+		},
+	}
+
+	for _, testCase := range cases {
+		tc := testCase
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			l := lexer.NewLexer(tc.input)
+			p := parser.NewParser(l)
+
+			program := p.ParseProgram()
+			assert.NotNil(t, program)
+
+			assert.Equal(t, tc.expected, program.String())
 		})
 	}
 }

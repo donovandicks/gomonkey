@@ -4,8 +4,10 @@ import (
 	"github.com/donovandicks/gomonkey/internal/token"
 )
 
-type PrecedenceTable map[token.TokenType]OperatorPrecedence
-type OperatorPrecedence int
+type (
+	PrecedenceTable    map[token.TokenType]OperatorPrecedence
+	OperatorPrecedence int
+)
 
 const (
 	_ OperatorPrecedence = iota
