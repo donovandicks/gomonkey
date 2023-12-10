@@ -1,9 +1,18 @@
 package parser
 
 import (
+	"strconv"
+
 	"github.com/donovandicks/gomonkey/internal/ast"
 	"github.com/donovandicks/gomonkey/internal/lexer"
 	"github.com/donovandicks/gomonkey/internal/token"
+)
+
+type (
+	prefixParseFn    func() ast.Expression
+	infixParseFn     func(ast.Expression) ast.Expression
+	PrefixParseFnMap map[token.TokenType]prefixParseFn
+	InfixParseFnMap  map[token.TokenType]infixParseFn
 )
 
 type Parser struct {
@@ -11,17 +20,33 @@ type Parser struct {
 	currToken token.Token
 	nextToken token.Token
 	errors    []string
+
+	prefixParseFns PrefixParseFnMap
+	infixParseFns  InfixParseFnMap
 }
 
 func NewParser(l *lexer.Lexer) *Parser {
 	p := &Parser{
-		l: l,
+		l:              l,
+		prefixParseFns: make(PrefixParseFnMap),
+		infixParseFns:  make(InfixParseFnMap),
 	}
+
+	p.registerPrefix(token.IDENT, p.parseIdentifier)
+	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 
 	p.readToken()
 	p.readToken()
 
 	return p
+}
+
+func (p *Parser) registerPrefix(t token.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[t] = fn
+}
+
+func (p *Parser) registerInfix(t token.TokenType, fn infixParseFn) {
+	p.infixParseFns[t] = fn
 }
 
 func (p *Parser) Errors() []string {
@@ -39,6 +64,23 @@ func (p *Parser) readToken() {
 
 func (p *Parser) expectNext(t token.TokenType) bool {
 	return p.nextToken.Type == t
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
+}
+
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	lit := &ast.IntegerLiteral{Token: p.currToken}
+
+	val, err := strconv.ParseInt(p.currToken.Literal, 0, 64)
+	if err != nil {
+		p.addError(ErrParseError{actual: p.currToken.Literal, expected: "integer"})
+		return nil
+	}
+
+	lit.Value = val
+	return lit
 }
 
 func (p *Parser) parseLetStatement() ast.Statement {
@@ -79,6 +121,29 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 	return stmt
 }
 
+func (p *Parser) parseExpression(precedence OperatorPrecedence) ast.Expression {
+	prefix := p.prefixParseFns[p.currToken.Type]
+	if prefix == nil {
+		return nil
+	}
+
+	leftExp := prefix()
+
+	return leftExp
+}
+
+func (p *Parser) parseExpressionStatement() ast.Statement {
+	stmt := &ast.ExpressionStatement{Token: p.currToken}
+
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.nextToken.Type == token.SEMICOLON {
+		p.readToken()
+	}
+
+	return stmt
+}
+
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.currToken.Type {
 	case token.LET:
@@ -86,7 +151,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
