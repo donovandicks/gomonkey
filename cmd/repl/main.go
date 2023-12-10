@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/user"
 
+	"github.com/donovandicks/gomonkey/internal/interpreter"
 	"github.com/donovandicks/gomonkey/internal/lexer"
 	"github.com/donovandicks/gomonkey/internal/parser"
 )
@@ -36,8 +37,11 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		io.WriteString(out, program.String())
-		io.WriteString(out, "\n")
+		evaled := interpreter.Eval(program)
+		if evaled != nil {
+			io.WriteString(out, evaled.Inspect())
+			io.WriteString(out, "\n")
+		}
 	}
 }
 
