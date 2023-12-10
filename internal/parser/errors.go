@@ -32,6 +32,14 @@ func (e ErrNoPrefixParser) Error() string {
 	return fmt.Sprintf("no prefix parser found for %s", e.operator)
 }
 
+type ErrMissingOpener struct {
+	expected string
+}
+
+func (e ErrMissingOpener) Error() string {
+	return fmt.Sprintf("missing opening '%s'", e.expected)
+}
+
 type ErrMissingCloser struct {
 	expected string
 }

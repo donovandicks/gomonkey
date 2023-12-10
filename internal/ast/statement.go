@@ -70,3 +70,24 @@ func (es *ExpressionStatement) String() string {
 
 	return ""
 }
+
+type BlockStatement struct {
+	Token      token.Token
+	Statements []Statement
+}
+
+func NewBlock(currToken token.Token) *BlockStatement {
+	return &BlockStatement{Token: currToken}
+}
+
+func (bs *BlockStatement) statementNode()       {}
+func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BlockStatement) String() string {
+	var out strings.Builder
+
+	for _, s := range bs.Statements {
+		out.WriteString(s.String())
+	}
+
+	return out.String()
+}

@@ -268,6 +268,90 @@ func TestParser(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "conditional expression no else",
+			input: "if (x > 5) { x }",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.IF, Literal: "if"},
+					Expression: &ast.IfExpression{
+						Token: token.Token{Type: token.IF, Literal: "if"},
+						Condition: &ast.InfixExpression{
+							Token: token.Token{Type: token.GT, Literal: ">"},
+							Left: &ast.Identifier{
+								Token: token.Token{Type: token.IDENT, Literal: "x"},
+								Value: "x",
+							},
+							Operator: ">",
+							Right: &ast.IntegerLiteral{
+								Token: token.Token{Type: token.INT, Literal: "5"},
+								Value: 5,
+							},
+						},
+						Consequence: &ast.BlockStatement{
+							Token: token.Token{Type: token.IDENT, Literal: "x"},
+							Statements: []ast.Statement{
+								&ast.ExpressionStatement{
+									Token: token.Token{Type: token.IDENT, Literal: "x"},
+									Expression: &ast.Identifier{
+										Token: token.Token{Type: token.IDENT, Literal: "x"},
+										Value: "x",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "conditional expression with else",
+			input: "if (x > 5) { x } else { y }",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.IF, Literal: "if"},
+					Expression: &ast.IfExpression{
+						Token: token.Token{Type: token.IF, Literal: "if"},
+						Condition: &ast.InfixExpression{
+							Token: token.Token{Type: token.GT, Literal: ">"},
+							Left: &ast.Identifier{
+								Token: token.Token{Type: token.IDENT, Literal: "x"},
+								Value: "x",
+							},
+							Operator: ">",
+							Right: &ast.IntegerLiteral{
+								Token: token.Token{Type: token.INT, Literal: "5"},
+								Value: 5,
+							},
+						},
+						Consequence: &ast.BlockStatement{
+							Token: token.Token{Type: token.IDENT, Literal: "x"},
+							Statements: []ast.Statement{
+								&ast.ExpressionStatement{
+									Token: token.Token{Type: token.IDENT, Literal: "x"},
+									Expression: &ast.Identifier{
+										Token: token.Token{Type: token.IDENT, Literal: "x"},
+										Value: "x",
+									},
+								},
+							},
+						},
+						Alternative: &ast.BlockStatement{
+							Token: token.Token{Type: token.IDENT, Literal: "y"},
+							Statements: []ast.Statement{
+								&ast.ExpressionStatement{
+									Token: token.Token{Type: token.IDENT, Literal: "y"},
+									Expression: &ast.Identifier{
+										Token: token.Token{Type: token.IDENT, Literal: "y"},
+										Value: "y",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range cases {

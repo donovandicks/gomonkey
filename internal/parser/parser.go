@@ -39,6 +39,7 @@ func NewParser(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.TRUE, p.parseBoolean)
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
+	p.registerPrefix(token.IF, p.parseIfExpression)
 
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
@@ -117,6 +118,115 @@ func (p *Parser) parseBoolean() ast.Expression {
 	return &ast.Boolean{Token: p.currToken, Value: p.currToken.Type == token.TRUE}
 }
 
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	expr := &ast.PrefixExpression{
+		Token:    p.currToken,
+		Operator: p.currToken.Literal,
+	}
+
+	p.readToken()
+
+	expr.Right = p.parseExpression(PREFIX)
+	return expr
+}
+
+func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	expr := &ast.InfixExpression{
+		Token:    p.currToken,
+		Operator: p.currToken.Literal,
+		Left:     left,
+	}
+
+	prec := p.currPrecedence()
+	p.readToken()
+	expr.Right = p.parseExpression(prec)
+
+	return expr
+}
+
+func (p *Parser) parseGroupedExpression() ast.Expression {
+	p.readToken() // advance past the '('
+
+	expr := p.parseExpression(LOWEST)
+
+	p.readToken() // advance to the next token after the expression
+
+	if p.currToken.Type != token.RPAREN {
+		// expression was parsed but group did not close
+		p.addError(ErrMissingCloser{expected: ")"})
+		return nil
+	}
+
+	return expr
+}
+
+func (p *Parser) parseIfExpression() ast.Expression {
+	expr := &ast.IfExpression{Token: p.currToken}
+
+	if !p.expectNext(token.LPAREN) {
+		p.addError(ErrMissingOpener{expected: "("})
+		return nil
+	}
+
+	p.readToken() // advance to the '('
+	p.readToken() // advance to the expression after '('
+
+	expr.Condition = p.parseExpression(LOWEST)
+
+	if !p.expectNext(token.RPAREN) {
+		p.addError(ErrMissingCloser{expected: ")"})
+		return nil
+	}
+
+	p.readToken() // advance to the ')'
+
+	if !p.expectNext(token.LBRACE) {
+		p.addError(ErrMissingOpener{expected: "{"})
+		return nil
+	}
+
+	p.readToken() // advance to the '{'
+
+	expr.Consequence = p.parseBlockStatement()
+
+	if p.expectNext(token.ELSE) {
+		p.readToken() // advance to the 'else'
+
+		if !p.expectNext(token.LBRACE) {
+			p.addError(ErrMissingOpener{expected: "{"})
+			return nil
+		}
+
+		p.readToken()
+
+		expr.Alternative = p.parseBlockStatement()
+	}
+
+	return expr
+}
+
+func (p *Parser) parseExpression(precedence OperatorPrecedence) ast.Expression {
+	prefix := p.prefixParseFns[p.currToken.Type]
+	if prefix == nil {
+		p.addError(ErrNoPrefixParser{operator: p.currToken.Literal})
+		return nil
+	}
+
+	leftExp := prefix()
+	for !p.expectNext(token.SEMICOLON) && precedence < p.peekPrecedence() {
+		infix := p.infixParseFns[p.nextToken.Type]
+		if infix == nil {
+			return leftExp
+		}
+
+		p.readToken()
+
+		leftExp = infix(leftExp)
+	}
+
+	return leftExp
+}
+
 func (p *Parser) parseLetStatement() ast.Statement {
 	stmt := &ast.LetStatement{Token: p.currToken}
 
@@ -160,80 +270,33 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 	return stmt
 }
 
-func (p *Parser) parsePrefixExpression() ast.Expression {
-	expr := &ast.PrefixExpression{
-		Token:    p.currToken,
-		Operator: p.currToken.Literal,
-	}
-
-	p.readToken()
-
-	expr.Right = p.parseExpression(PREFIX)
-	return expr
-}
-
-func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
-	expr := &ast.InfixExpression{
-		Token:    p.currToken,
-		Operator: p.currToken.Literal,
-		Left:     left,
-	}
-
-	prec := p.currPrecedence()
-	p.readToken()
-	expr.Right = p.parseExpression(prec)
-
-	return expr
-}
-
-func (p *Parser) parseGroupedExpression() ast.Expression {
-	p.readToken() // advance past the '('
-
-	expr := p.parseExpression(LOWEST)
-
-	p.readToken() // advance to the next token after the expression
-
-	if p.currToken.Type != token.RPAREN {
-		// expression was parsed but group did not close
-		p.addError(ErrMissingCloser{expected: ")"})
-		return nil
-	}
-
-	return expr
-}
-
-func (p *Parser) parseExpression(precedence OperatorPrecedence) ast.Expression {
-	prefix := p.prefixParseFns[p.currToken.Type]
-	if prefix == nil {
-		p.addError(ErrNoPrefixParser{operator: p.currToken.Literal})
-		return nil
-	}
-
-	leftExp := prefix()
-	for p.nextToken.Type != token.SEMICOLON && precedence < p.peekPrecedence() {
-		infix := p.infixParseFns[p.nextToken.Type]
-		if infix == nil {
-			return leftExp
-		}
-
-		p.readToken()
-
-		leftExp = infix(leftExp)
-	}
-
-	return leftExp
-}
-
 func (p *Parser) parseExpressionStatement() ast.Statement {
 	stmt := &ast.ExpressionStatement{Token: p.currToken}
 
 	stmt.Expression = p.parseExpression(LOWEST)
 
-	if p.nextToken.Type == token.SEMICOLON {
+	if p.expectNext(token.SEMICOLON) {
 		p.readToken()
 	}
 
 	return stmt
+}
+
+func (p *Parser) parseBlockStatement() *ast.BlockStatement {
+	p.readToken() // advance past the opening '{'
+
+	block := ast.NewBlock(p.currToken)
+
+	for p.currToken.Type != token.RBRACE && p.currToken.Type != token.EOF {
+		stmt := p.parseStatement()
+		if stmt != nil {
+			block.Statements = append(block.Statements, stmt)
+		}
+
+		p.readToken()
+	}
+
+	return block
 }
 
 func (p *Parser) parseStatement() ast.Statement {
