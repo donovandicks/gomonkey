@@ -103,6 +103,49 @@ func TestEvaluator(t *testing.T) {
 			input:  "(1 < 2) == true",
 			output: object.TrueBool,
 		},
+		{
+			name:   "if expression: truthy condition",
+			input:  "if (10) { 10 } else { -10 }",
+			output: object.NewIntegerObject(10),
+		},
+		{
+			name:   "if expression: literal true condition",
+			input:  "if (true) { 10 }",
+			output: object.NewIntegerObject(10),
+		},
+		{
+			name:   "if expression: else branch",
+			input:  "if (false) { 10 } else { -10 }",
+			output: object.NewIntegerObject(-10),
+		},
+		{
+			name:   "if expression: null return",
+			input:  "if (false) { 10 }",
+			output: object.NullObject,
+		},
+		{
+			name:   "return: top-level",
+			input:  "return 5;",
+			output: object.NewIntegerObject(5),
+		},
+		{
+			name:   "return: mid block",
+			input:  "1 + 5; return 3; 7 * 7",
+			output: object.NewIntegerObject(3),
+		},
+		{
+			name: "return: nested blocks",
+			input: `
+			if (true) {
+				if (true) {
+					return 10;
+				}
+
+				return 5;
+			}
+			`,
+			output: object.NewIntegerObject(10),
+		},
 	}
 
 	for _, testCase := range cases {
@@ -115,6 +158,47 @@ func TestEvaluator(t *testing.T) {
 			prog := p.ParseProgram()
 
 			assert.Equal(t, tc.output, interpreter.Eval(prog))
+		})
+	}
+}
+
+func TestEvaluator_Errors(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name  string
+		input string
+		err   *object.Err
+	}{
+		{
+			name:  "type error: binary operator",
+			input: "5 + true; 5;",
+			err:   &object.Err{Msg: "type error: cannot perform '+' on INTEGER, BOOLEAN"},
+		},
+		{
+			name:  "unknown operator: unary expression",
+			input: "-true",
+			err:   &object.Err{Msg: "invalid operator '-' for type BOOLEAN"},
+		},
+		{
+			name:  "unknown operator: infix expression",
+			input: "true + false",
+			err:   &object.Err{Msg: "unknown operator '+' for types BOOLEAN, BOOLEAN"},
+		},
+	}
+
+	for _, testCase := range cases {
+		tc := testCase
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			l := lexer.NewLexer(tc.input)
+			p := parser.NewParser(l)
+			prog := p.ParseProgram()
+
+			evaled := interpreter.Eval(prog)
+
+			assert.Equal(t, tc.err, evaled)
 		})
 	}
 }

@@ -8,6 +8,8 @@ const (
 	OBJ_INTEGER ObjectType = "INTEGER"
 	OBJ_BOOLEAN ObjectType = "BOOLEAN"
 	OBJ_NULL    ObjectType = "NULL"
+	OBJ_RETURN  ObjectType = "RETURN"
+	OBJ_ERR     ObjectType = "ERROR"
 )
 
 var (
@@ -47,3 +49,30 @@ type Null struct{}
 
 func (n *Null) Inspect() string  { return "null" }
 func (n *Null) Type() ObjectType { return OBJ_BOOLEAN }
+
+type ReturnVal struct {
+	Value Object
+}
+
+func (rv *ReturnVal) Inspect() string    { return rv.Value.Inspect() }
+func (rv *ReturnVal) Type() ObjectType   { return OBJ_RETURN }
+func NewReturnVal(val Object) *ReturnVal { return &ReturnVal{Value: val} }
+
+type Err struct {
+	Msg string
+}
+
+func (e *Err) Inspect() string  { return "ERROR: " + e.Msg }
+func (e *Err) Type() ObjectType { return OBJ_ERR }
+
+func NewErr(format string, args ...interface{}) *Err {
+	return &Err{Msg: fmt.Sprintf(format, args...)}
+}
+
+func IsErr(obj Object) bool {
+	if obj != nil {
+		return obj.Type() == OBJ_ERR
+	}
+
+	return false
+}
