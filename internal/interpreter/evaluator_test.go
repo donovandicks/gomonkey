@@ -146,6 +146,26 @@ func TestEvaluator(t *testing.T) {
 			`,
 			output: object.NewIntegerObject(10),
 		},
+		{
+			name:   "let binding: simple assignment",
+			input:  "let x = 5; x;",
+			output: object.NewIntegerObject(5),
+		},
+		{
+			name:   "let binding: expression assignment",
+			input:  "let x = 5 * 5; x;",
+			output: object.NewIntegerObject(25),
+		},
+		{
+			name:   "let binding: transitive assignment",
+			input:  "let x = 5; let y = x; y;",
+			output: object.NewIntegerObject(5),
+		},
+		{
+			name:   "let binding: identifier operations",
+			input:  "let x = 5; let y = 10; x + y;",
+			output: object.NewIntegerObject(15),
+		},
 	}
 
 	for _, testCase := range cases {
@@ -156,8 +176,9 @@ func TestEvaluator(t *testing.T) {
 			l := lexer.NewLexer(tc.input)
 			p := parser.NewParser(l)
 			prog := p.ParseProgram()
+			env := object.NewEnv()
 
-			assert.Equal(t, tc.output, interpreter.Eval(prog))
+			assert.Equal(t, tc.output, interpreter.Eval(prog, env))
 		})
 	}
 }
@@ -185,6 +206,11 @@ func TestEvaluator_Errors(t *testing.T) {
 			input: "true + false",
 			err:   &object.Err{Msg: "unknown operator '+' for types BOOLEAN, BOOLEAN"},
 		},
+		{
+			name:  "let binding: unbound identifier",
+			input: "x;",
+			err:   &object.Err{Msg: "undefined identifier 'x'"},
+		},
 	}
 
 	for _, testCase := range cases {
@@ -195,10 +221,9 @@ func TestEvaluator_Errors(t *testing.T) {
 			l := lexer.NewLexer(tc.input)
 			p := parser.NewParser(l)
 			prog := p.ParseProgram()
+			env := object.NewEnv()
 
-			evaled := interpreter.Eval(prog)
-
-			assert.Equal(t, tc.err, evaled)
+			assert.Equal(t, tc.err, interpreter.Eval(prog, env))
 		})
 	}
 }

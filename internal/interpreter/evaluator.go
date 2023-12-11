@@ -5,11 +5,11 @@ import (
 	"github.com/donovandicks/gomonkey/internal/object"
 )
 
-func evalProgram(stmts []ast.Statement) object.Object {
+func evalProgram(stmts []ast.Statement, env *object.Environment) object.Object {
 	var res object.Object
 
 	for _, stmt := range stmts {
-		res = Eval(stmt)
+		res = Eval(stmt, env)
 
 		switch res := res.(type) {
 		case *object.ReturnVal:
@@ -22,11 +22,11 @@ func evalProgram(stmts []ast.Statement) object.Object {
 	return res
 }
 
-func evalBlockStatement(block *ast.BlockStatement) object.Object {
+func evalBlockStatement(block *ast.BlockStatement, env *object.Environment) object.Object {
 	var res object.Object
 
 	for _, stmt := range block.Statements {
-		res = Eval(stmt)
+		res = Eval(stmt, env)
 
 		if res != nil {
 			rt := res.Type()
@@ -37,6 +37,15 @@ func evalBlockStatement(block *ast.BlockStatement) object.Object {
 	}
 
 	return res
+}
+
+func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
+	val, ok := env.Get(node.Value)
+	if !ok {
+		return object.NewErr("undefined identifier '%s'", node.Value)
+	}
+
+	return val
 }
 
 func evalBangOpExpr(right object.Object) object.Object {
@@ -113,57 +122,67 @@ func evalInfixExpr(operator string, left, right object.Object) object.Object {
 	}
 }
 
-func evalIfExpression(expr *ast.IfExpression) object.Object {
-	cond := Eval(expr.Condition)
+func evalIfExpression(expr *ast.IfExpression, env *object.Environment) object.Object {
+	cond := Eval(expr.Condition, env)
 	if object.IsErr(cond) {
 		return cond
 	}
 
 	if object.IsTruthy(cond) {
-		return Eval(expr.Consequence)
+		return Eval(expr.Consequence, env)
 	}
 
 	if expr.Alternative != nil {
-		return Eval(expr.Alternative)
+		return Eval(expr.Alternative, env)
 	}
 
 	return object.NullObject
 }
 
-func Eval(node ast.Node) object.Object {
+func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
-		return evalProgram(node.Statements)
+		return evalProgram(node.Statements, env)
 	case *ast.ExpressionStatement:
-		return Eval(node.Expression)
+		return Eval(node.Expression, env)
 	case *ast.IntegerLiteral:
 		return object.NewIntegerObject(node.Value)
 	case *ast.Boolean:
 		return object.BoolFromNative(node.Value)
 	case *ast.PrefixExpression:
-		right := Eval(node.Right) // evaluate the operand
+		right := Eval(node.Right, env) // evaluate the operand
 		if object.IsErr(right) {
 			return right
 		}
 		return evalPrefixExpr(node.Operator, right)
 	case *ast.InfixExpression:
-		left := Eval(node.Left)
+		left := Eval(node.Left, env)
 		if object.IsErr(left) {
 			return left
 		}
 
-		right := Eval(node.Right)
+		right := Eval(node.Right, env)
 		if object.IsErr(right) {
 			return right
 		}
 
 		return evalInfixExpr(node.Operator, left, right)
 	case *ast.BlockStatement:
-		return evalBlockStatement(node)
+		return evalBlockStatement(node, env)
 	case *ast.IfExpression:
-		return evalIfExpression(node)
+		return evalIfExpression(node, env)
+	case *ast.Identifier:
+		return evalIdentifier(node, env)
+	case *ast.LetStatement:
+		val := Eval(node.Value, env)
+		if object.IsErr(val) {
+			return val
+		}
+
+		env.Set(node.Name.Value, val)
+		return nil
 	case *ast.ReturnStatement:
-		val := Eval(node.Value)
+		val := Eval(node.Value, env)
 		if object.IsErr(val) {
 			return val
 		}

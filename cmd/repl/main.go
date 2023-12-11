@@ -9,6 +9,7 @@ import (
 
 	"github.com/donovandicks/gomonkey/internal/interpreter"
 	"github.com/donovandicks/gomonkey/internal/lexer"
+	"github.com/donovandicks/gomonkey/internal/object"
 	"github.com/donovandicks/gomonkey/internal/parser"
 )
 
@@ -16,6 +17,7 @@ const PROMPT = ">> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	env := object.NewEnv()
 
 	for {
 		fmt.Fprintf(out, PROMPT)
@@ -37,7 +39,7 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		evaled := interpreter.Eval(program)
+		evaled := interpreter.Eval(program, env)
 		if evaled != nil {
 			io.WriteString(out, evaled.Inspect())
 			io.WriteString(out, "\n")
