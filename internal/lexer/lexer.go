@@ -117,7 +117,7 @@ func (l *Lexer) readChar() {
 // returned as a single identifier.
 func (l *Lexer) readIdentifier() string {
 	pos := l.pos
-	for isLetter(l.ch) {
+	for isLetter(l.ch) || isDigit(l.ch) {
 		l.readChar()
 	}
 
