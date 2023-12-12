@@ -1,7 +1,8 @@
 package object
 
 type Environment struct {
-	vals map[string]Object
+	vals  map[string]Object
+	outer *Environment
 }
 
 func NewEnv() *Environment {
@@ -10,8 +11,27 @@ func NewEnv() *Environment {
 	}
 }
 
+func NewEnvFromEnv(outer *Environment) *Environment {
+	return &Environment{
+		vals:  make(map[string]Object),
+		outer: outer,
+	}
+}
+
+func (e *Environment) With(vals map[string]Object) *Environment {
+	for ident, val := range vals {
+		e.Set(ident, val)
+	}
+
+	return e
+}
+
 func (e *Environment) Get(name string) (Object, bool) {
 	val, ok := e.vals[name]
+	if !ok && e.outer != nil {
+		return e.outer.Get(name)
+	}
+
 	return val, ok
 }
 

@@ -1,12 +1,18 @@
 package object
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/donovandicks/gomonkey/internal/ast"
+)
 
 type ObjectType string
 
 const (
 	OBJ_INTEGER ObjectType = "INTEGER"
 	OBJ_BOOLEAN ObjectType = "BOOLEAN"
+	OBJ_FUNC    ObjectType = "FUNCTION"
 	OBJ_NULL    ObjectType = "NULL"
 	OBJ_RETURN  ObjectType = "RETURN"
 	OBJ_ERR     ObjectType = "ERROR"
@@ -43,6 +49,41 @@ func BoolFromNative(val bool) *Boolean {
 	}
 
 	return FalseBool
+}
+
+type Function struct {
+	Parameters []*ast.Identifier
+	Body       *ast.BlockStatement
+	Env        *Environment
+}
+
+func (f *Function) Inspect() string {
+	var out strings.Builder
+
+	ps := []string{}
+	for _, p := range f.Parameters {
+		ps = append(ps, p.String())
+	}
+
+	out.WriteString("fn(")
+	out.WriteString(strings.Join(ps, ", "))
+	out.WriteString(") {\n")
+	out.WriteString(f.Body.String())
+	out.WriteString("\n}")
+
+	return out.String()
+}
+func (f *Function) Type() ObjectType { return OBJ_FUNC }
+func NewFunctionObject(
+	params []*ast.Identifier,
+	body *ast.BlockStatement,
+	env *Environment,
+) *Function {
+	return &Function{
+		Parameters: params,
+		Body:       body,
+		Env:        env,
+	}
 }
 
 type Null struct{}

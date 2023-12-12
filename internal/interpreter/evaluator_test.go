@@ -166,6 +166,41 @@ func TestEvaluator(t *testing.T) {
 			input:  "let x = 5; let y = 10; x + y;",
 			output: object.NewIntegerObject(15),
 		},
+		{
+			name:   "function calls: top-level",
+			input:  "fn(x) {return x + 1;}(1)",
+			output: object.NewIntegerObject(2),
+		},
+		{
+			name:   "function calls: assignment",
+			input:  "let addOne = fn(x) { return x + 1; }; addOne(2)",
+			output: object.NewIntegerObject(3),
+		},
+		{
+			name:   "function calls: assignment with multi param",
+			input:  "let add = fn(x, y) { return x + y; } add(1, 2)",
+			output: object.NewIntegerObject(3),
+		},
+		{
+			name:   "function calls: closure",
+			input:  "let x = 1; let addX = fn(y) { return x + y; }; addX(2)",
+			output: object.NewIntegerObject(3),
+		},
+		{
+			name:   "function calls: implicit return",
+			input:  "let add = fn(x, y) { x + y }; add(1, 2);",
+			output: object.NewIntegerObject(3),
+		},
+		{
+			name:   "function calls: higher order funcs",
+			input:  "let adder = fn(x) { fn(y) { x + y }}; let addOne = adder(1); addOne(2)",
+			output: object.NewIntegerObject(3),
+		},
+		{
+			name:   "function calls: functions as arguments",
+			input:  "let doer = fn(f, x) { f(x) }; let addOner = fn(x) { x + 1 }; doer(addOner, 2)",
+			output: object.NewIntegerObject(3),
+		},
 	}
 
 	for _, testCase := range cases {
@@ -179,6 +214,36 @@ func TestEvaluator(t *testing.T) {
 			env := object.NewEnv()
 
 			assert.Equal(t, tc.output, interpreter.Eval(prog, env))
+		})
+	}
+}
+
+func TestEvaluator_Functions(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name   string
+		input  string
+		output string
+	}{
+		{
+			name:   "function literal: top-level",
+			input:  "fn(x) { return x + 1; }",
+			output: "fn(x) {\nreturn (x + 1);\n}",
+		},
+	}
+
+	for _, testCase := range cases {
+		tc := testCase
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			l := lexer.NewLexer(tc.input)
+			p := parser.NewParser(l)
+			prog := p.ParseProgram()
+			env := object.NewEnv()
+
+			assert.Equal(t, tc.output, interpreter.Eval(prog, env).Inspect())
 		})
 	}
 }
