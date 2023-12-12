@@ -121,10 +121,24 @@ func evalIntegerInfixExpr(operator string, left, right object.Object) object.Obj
 	}
 }
 
+func evalStringInfixExpr(operator string, left, right object.Object) object.Object {
+	l := left.(*object.String).Value
+	r := right.(*object.String).Value
+
+	switch operator {
+	case "+":
+		return object.NewStringObject(l + r)
+	default:
+		return object.NewErr("unknown string operator '%s' on strings %s, %s", operator, l, r)
+	}
+}
+
 func evalInfixExpr(operator string, left, right object.Object) object.Object {
 	switch {
 	case left.Type() == object.OBJ_INTEGER && right.Type() == object.OBJ_INTEGER:
 		return evalIntegerInfixExpr(operator, left, right)
+	case left.Type() == object.OBJ_STR && right.Type() == object.OBJ_STR:
+		return evalStringInfixExpr(operator, left, right)
 	case operator == "==":
 		return object.BoolFromNative(left == right)
 	case operator == "!=":
@@ -183,6 +197,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return Eval(node.Expression, env)
 	case *ast.IntegerLiteral:
 		return object.NewIntegerObject(node.Value)
+	case *ast.StringLiteral:
+		return object.NewStringObject(node.Value)
 	case *ast.Boolean:
 		return object.BoolFromNative(node.Value)
 	case *ast.PrefixExpression:

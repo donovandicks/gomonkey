@@ -108,6 +108,14 @@ func TestNextToken(t *testing.T) {
 				{Type: token.EOF, Literal: ""},
 			},
 		},
+		{
+			name:  "strings",
+			input: `"hello, world!" "one"`,
+			expTokens: []token.Token{
+				{Type: token.STRING, Literal: "hello, world!"},
+				{Type: token.STRING, Literal: "one"},
+			},
+		},
 	}
 
 	for _, testCase := range cases {

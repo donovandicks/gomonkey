@@ -25,6 +25,64 @@ func NewLexer(input string) *Lexer {
 	return l
 }
 
+func (l *Lexer) peek() byte {
+	if l.readPos >= len(l.input) {
+		return 0
+	} else {
+		return l.input[l.readPos]
+	}
+}
+
+func (l *Lexer) readChar() {
+	l.ch = l.peek()
+	l.pos = l.readPos
+	l.readPos += 1
+}
+
+// readIdentifier reads an entire word at a time.
+//
+// The starting location of the word is the current lexer position at the time
+// of call. The end is determined by advancing over the input until a non-letter
+// byte is encountered. The characters between the start and end positions are
+// returned as a single identifier.
+func (l *Lexer) readIdentifier() string {
+	pos := l.pos
+	for isLetter(l.ch) || isDigit(l.ch) {
+		l.readChar()
+	}
+
+	return l.input[pos:l.pos]
+}
+
+func (l *Lexer) readNumber() string {
+	pos := l.pos
+	for isDigit(l.ch) {
+		l.readChar()
+	}
+
+	return l.input[pos:l.pos]
+}
+
+func (l *Lexer) readString() string {
+	pos := l.pos + 1 // after the starting quote
+
+	for {
+		l.readChar()
+		if l.ch == '"' || l.ch == 0 {
+			break
+		}
+	}
+
+	return l.input[pos:l.pos]
+}
+
+// skipWhitespace advances the lexer over any whitespace characters
+func (l *Lexer) skipWhitespace() {
+	for l.ch == ' ' || l.ch == '\t' || l.ch == '\r' || l.ch == '\n' {
+		l.readChar()
+	}
+}
+
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
@@ -73,6 +131,9 @@ func (l *Lexer) NextToken() token.Token {
 		tok = token.New(token.LBRACE, l.ch)
 	case '}':
 		tok = token.New(token.RBRACE, l.ch)
+	case '"':
+		tok.Type = token.STRING
+		tok.Literal = l.readString()
 	case 0:
 		tok.Literal = ""
 		tok.Type = token.EOF
@@ -93,49 +154,4 @@ func (l *Lexer) NextToken() token.Token {
 
 	l.readChar()
 	return tok
-}
-
-func (l *Lexer) peek() byte {
-	if l.readPos >= len(l.input) {
-		return 0
-	} else {
-		return l.input[l.readPos]
-	}
-}
-
-func (l *Lexer) readChar() {
-	l.ch = l.peek()
-	l.pos = l.readPos
-	l.readPos += 1
-}
-
-// readIdentifier reads an entire word at a time.
-//
-// The starting location of the word is the current lexer position at the time
-// of call. The end is determined by advancing over the input until a non-letter
-// byte is encountered. The characters between the start and end positions are
-// returned as a single identifier.
-func (l *Lexer) readIdentifier() string {
-	pos := l.pos
-	for isLetter(l.ch) || isDigit(l.ch) {
-		l.readChar()
-	}
-
-	return l.input[pos:l.pos]
-}
-
-func (l *Lexer) readNumber() string {
-	pos := l.pos
-	for isDigit(l.ch) {
-		l.readChar()
-	}
-
-	return l.input[pos:l.pos]
-}
-
-// skipWhitespace advances the lexer over any whitespace characters
-func (l *Lexer) skipWhitespace() {
-	for l.ch == ' ' || l.ch == '\t' || l.ch == '\r' || l.ch == '\n' {
-		l.readChar()
-	}
 }

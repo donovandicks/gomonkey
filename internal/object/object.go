@@ -16,6 +16,7 @@ const (
 	OBJ_NULL    ObjectType = "NULL"
 	OBJ_RETURN  ObjectType = "RETURN"
 	OBJ_ERR     ObjectType = "ERROR"
+	OBJ_STR     ObjectType = "STRING"
 )
 
 var (
@@ -36,6 +37,14 @@ type Integer struct {
 func (i *Integer) Inspect() string        { return fmt.Sprintf("%d", i.Value) }
 func (i *Integer) Type() ObjectType       { return OBJ_INTEGER }
 func NewIntegerObject(val int64) *Integer { return &Integer{Value: val} }
+
+type String struct {
+	Value string
+}
+
+func (s *String) Inspect() string        { return s.Value }
+func (s *String) Type() ObjectType       { return OBJ_STR }
+func NewStringObject(val string) *String { return &String{Value: val} }
 
 type Boolean struct {
 	Value bool

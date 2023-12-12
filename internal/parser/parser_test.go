@@ -512,6 +512,19 @@ func TestParser(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "strings",
+			input: `"hello, world!"`,
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.STRING, Literal: "hello, world!"},
+					Expression: &ast.StringLiteral{
+						Token: token.Token{Type: token.STRING, Literal: "hello, world!"},
+						Value: "hello, world!",
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range cases {

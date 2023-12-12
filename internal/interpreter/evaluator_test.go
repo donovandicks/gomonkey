@@ -201,6 +201,26 @@ func TestEvaluator(t *testing.T) {
 			input:  "let doer = fn(f, x) { f(x) }; let addOner = fn(x) { x + 1 }; doer(addOner, 2)",
 			output: object.NewIntegerObject(3),
 		},
+		{
+			name:   "strings: expression",
+			input:  `"hello"`,
+			output: object.NewStringObject("hello"),
+		},
+		{
+			name:   "strings: assignment",
+			input:  `let x = "hello"; x;`,
+			output: object.NewStringObject("hello"),
+		},
+		{
+			name:   "strings: return vals",
+			input:  `let print = fn(x) { x }; print("hello")`,
+			output: object.NewStringObject("hello"),
+		},
+		{
+			name:   "strings: conact",
+			input:  `"hello" + " " + "world"`,
+			output: object.NewStringObject("hello world"),
+		},
 	}
 
 	for _, testCase := range cases {
