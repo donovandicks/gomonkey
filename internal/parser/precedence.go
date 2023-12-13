@@ -12,6 +12,7 @@ type (
 const (
 	_ OperatorPrecedence = iota
 	LOWEST
+	ASSIGN
 	EQUALS
 	LESSGREATER
 	SUM
@@ -22,6 +23,7 @@ const (
 
 var Precedence PrecedenceTable = PrecedenceTable{
 	token.EQ:     EQUALS,
+	token.ASSIGN: ASSIGN,
 	token.NE:     EQUALS,
 	token.LT:     LESSGREATER,
 	token.GT:     LESSGREATER,

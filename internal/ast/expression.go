@@ -160,3 +160,21 @@ func (ce *CallExpression) String() string {
 
 	return out.String()
 }
+
+type AssignmentExpression struct {
+	Token token.Token // identifier token
+	Left  *Identifier
+	Right Expression
+}
+
+func (ae *AssignmentExpression) expressionNode()      {}
+func (ae *AssignmentExpression) TokenLiteral() string { return ae.Token.Literal }
+func (ae *AssignmentExpression) String() string {
+	var out strings.Builder
+
+	out.WriteString(ae.Left.String())
+	out.WriteString(" = ")
+	out.WriteString(ae.Right.String())
+
+	return out.String()
+}

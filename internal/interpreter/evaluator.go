@@ -5,6 +5,8 @@ import (
 	"github.com/donovandicks/gomonkey/internal/object"
 )
 
+var count = 0
+
 func evalProgram(stmts []ast.Statement, env *object.Environment) object.Object {
 	var res object.Object
 
@@ -54,12 +56,15 @@ func evalExpressions(exprs []ast.Expression, env *object.Environment) []object.O
 }
 
 func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
-	val, ok := env.Get(node.Value)
-	if !ok {
-		return object.NewErr("undefined identifier '%s'", node.Value)
+	if ident, ok := env.Get(node.Value); ok {
+		return ident
 	}
 
-	return val
+	if builtin, ok := Builtins[node.Value]; ok {
+		return builtin
+	}
+
+	return object.NewErr("undefined variable '%s'", node.Value)
 }
 
 func evalBangOpExpr(right object.Object) object.Object {
@@ -167,6 +172,14 @@ func evalIfExpression(expr *ast.IfExpression, env *object.Environment) object.Ob
 	return object.NullObject
 }
 
+func evalWhileStatement(stmt *ast.WhileStatement, env *object.Environment) object.Object {
+	for object.IsTruthy(Eval(stmt.Condition, env)) {
+		evalBlockStatement(stmt.Block, env)
+	}
+
+	return object.NullObject
+}
+
 func unwrap(ret object.Object) object.Object {
 	if r, ok := ret.(*object.ReturnVal); ok {
 		return r.Value
@@ -176,17 +189,19 @@ func unwrap(ret object.Object) object.Object {
 }
 
 func applyFunc(f object.Object, args []object.Object) object.Object {
-	fn, ok := f.(*object.Function)
-	if !ok {
-		return object.NewErr("object %s is not a function", f.Type())
+	switch fn := f.(type) {
+	case *object.Function:
+		newEnv := object.NewEnvFromEnv(fn.Env)
+		for idx, param := range fn.Parameters {
+			newEnv.Set(param.Value, args[idx])
+		}
+		return unwrap(Eval(fn.Body, newEnv))
+	case *object.Builtin:
+		return fn.Fn(args...)
+	default:
+		return object.NewErr("undefined function '%s'", fn.Type())
 	}
 
-	newEnv := object.NewEnvFromEnv(fn.Env)
-	for idx, param := range fn.Parameters {
-		newEnv.Set(param.Value, args[idx])
-	}
-
-	return unwrap(Eval(fn.Body, newEnv))
 }
 
 func Eval(node ast.Node, env *object.Environment) object.Object {
@@ -207,6 +222,13 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return right
 		}
 		return evalPrefixExpr(node.Operator, right)
+	case *ast.AssignmentExpression:
+		right := Eval(node.Right, env)
+		if object.IsErr(right) {
+			return right
+		}
+
+		return env.Update(node.Left.Value, right)
 	case *ast.InfixExpression:
 		left := Eval(node.Left, env)
 		if object.IsErr(left) {
@@ -225,6 +247,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalIfExpression(node, env)
 	case *ast.Identifier:
 		return evalIdentifier(node, env)
+	case *ast.WhileStatement:
+		return evalWhileStatement(node, env)
 	case *ast.LetStatement:
 		val := Eval(node.Value, env)
 		if object.IsErr(val) {

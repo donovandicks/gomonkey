@@ -71,6 +71,30 @@ func (es *ExpressionStatement) String() string {
 	return ""
 }
 
+type WhileStatement struct {
+	Token     token.Token // the 'while' token
+	Condition Expression
+	Block     *BlockStatement
+}
+
+func (ws *WhileStatement) statementNode()       {}
+func (ws *WhileStatement) TokenLiteral() string { return ws.Token.Literal }
+func (ws *WhileStatement) String() string {
+	var out strings.Builder
+
+	stmts := []string{}
+	for _, s := range ws.Block.Statements {
+		stmts = append(stmts, s.String())
+	}
+
+	out.WriteString("while")
+	out.WriteString(ws.Condition.String())
+	out.WriteString(" ")
+	out.WriteString(ws.Block.String())
+
+	return out.String()
+}
+
 type BlockStatement struct {
 	Token      token.Token
 	Statements []Statement

@@ -36,7 +36,7 @@ func TestNextToken(t *testing.T) {
 		},
 		{
 			name:  "keywords",
-			input: "fn let return if else true false",
+			input: "fn let return if else true false while",
 			expTokens: []token.Token{
 				{Type: token.FUNCTION, Literal: "fn"},
 				{Type: token.LET, Literal: "let"},
@@ -45,6 +45,7 @@ func TestNextToken(t *testing.T) {
 				{Type: token.ELSE, Literal: "else"},
 				{Type: token.TRUE, Literal: "true"},
 				{Type: token.FALSE, Literal: "false"},
+				{Type: token.WHILE, Literal: "while"},
 			},
 		},
 		{

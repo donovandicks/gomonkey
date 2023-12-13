@@ -51,6 +51,7 @@ func NewParser(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.NE, p.parseInfixExpression)
 	p.registerInfix(token.LT, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
+	p.registerInfix(token.ASSIGN, p.parseInfixExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 
 	p.readToken()
@@ -138,17 +139,26 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 }
 
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
-	expr := &ast.InfixExpression{
-		Token:    p.currToken,
-		Operator: p.currToken.Literal,
-		Left:     left,
+	operator := p.currToken
+	prec := p.currPrecedence()
+
+	p.readToken()
+	right := p.parseExpression(prec)
+
+	if operator.Type == token.ASSIGN {
+		return &ast.AssignmentExpression{
+			Token: operator,
+			Left:  left.(*ast.Identifier),
+			Right: right,
+		}
 	}
 
-	prec := p.currPrecedence()
-	p.readToken()
-	expr.Right = p.parseExpression(prec)
-
-	return expr
+	return &ast.InfixExpression{
+		Token:    operator,
+		Operator: operator.Literal,
+		Left:     left,
+		Right:    right,
+	}
 }
 
 func (p *Parser) parseGroupedExpression() ast.Expression {
@@ -165,6 +175,38 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 	}
 
 	return expr
+}
+
+func (p *Parser) parseWhileStatement() ast.Statement {
+	stmt := &ast.WhileStatement{Token: p.currToken}
+
+	if !p.expectNext(token.LPAREN) {
+		p.addError(ErrMissingOpener{expected: "("})
+		return nil
+	}
+
+	p.readToken() // advance to '('
+	p.readToken() // advance to condition
+
+	stmt.Condition = p.parseExpression(LOWEST)
+
+	if !p.expectNext(token.RPAREN) {
+		p.addError(ErrMissingCloser{expected: ")"})
+		return nil
+	}
+
+	p.readToken() // advance to closing paren
+
+	if !p.expectNext(token.LBRACE) {
+		p.addError(ErrMissingOpener{expected: "{"})
+		return nil
+	}
+
+	p.readToken()
+
+	stmt.Block = p.parseBlockStatement()
+
+	return stmt
 }
 
 func (p *Parser) parseIfExpression() ast.Expression {
@@ -401,6 +443,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseLetStatement()
 	case token.RETURN:
 		return p.parseReturnStatement()
+	case token.WHILE:
+		return p.parseWhileStatement()
 	default:
 		return p.parseExpressionStatement()
 	}

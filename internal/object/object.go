@@ -8,6 +8,7 @@ import (
 )
 
 type ObjectType string
+type BuiltinFn func(args ...Object) Object
 
 const (
 	OBJ_INTEGER ObjectType = "INTEGER"
@@ -17,6 +18,7 @@ const (
 	OBJ_RETURN  ObjectType = "RETURN"
 	OBJ_ERR     ObjectType = "ERROR"
 	OBJ_STR     ObjectType = "STRING"
+	OBJ_BUILTIN ObjectType = "BUILTIN"
 )
 
 var (
@@ -94,6 +96,13 @@ func NewFunctionObject(
 		Env:        env,
 	}
 }
+
+type Builtin struct {
+	Fn BuiltinFn
+}
+
+func (b *Builtin) Inspect() string  { return "builtin" }
+func (b *Builtin) Type() ObjectType { return OBJ_BUILTIN }
 
 type Null struct{}
 

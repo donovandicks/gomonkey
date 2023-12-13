@@ -31,6 +31,7 @@ const (
 	TRUE                = "TRUE"
 	FALSE               = "FALSE"
 	STRING              = "STRING"
+	WHILE               = "WHILE"
 )
 
 var Keywords = map[string]TokenType{
@@ -41,6 +42,7 @@ var Keywords = map[string]TokenType{
 	"else":   ELSE,
 	"true":   TRUE,
 	"false":  FALSE,
+	"while":  WHILE,
 }
 
 type Token struct {

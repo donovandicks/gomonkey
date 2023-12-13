@@ -221,6 +221,16 @@ func TestEvaluator(t *testing.T) {
 			input:  `"hello" + " " + "world"`,
 			output: object.NewStringObject("hello world"),
 		},
+		{
+			name: "while statement: counter",
+			input: `let x = 0;
+			while (x < 3) {
+				x = x + 1;
+			}
+			return x;
+			`,
+			output: object.NewIntegerObject(3),
+		},
 	}
 
 	for _, testCase := range cases {
@@ -294,7 +304,7 @@ func TestEvaluator_Errors(t *testing.T) {
 		{
 			name:  "let binding: unbound identifier",
 			input: "x;",
-			err:   &object.Err{Msg: "undefined identifier 'x'"},
+			err:   &object.Err{Msg: "undefined variable 'x'"},
 		},
 	}
 

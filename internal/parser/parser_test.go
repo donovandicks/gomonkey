@@ -525,6 +525,156 @@ func TestParser(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "while statement: boolean condition",
+			input: "while (true) { x + 1; }",
+			expected: []ast.Statement{
+				&ast.WhileStatement{
+					Token: token.Token{Type: token.WHILE, Literal: "while"},
+					Condition: &ast.Boolean{
+						Token: token.Token{Type: token.TRUE, Literal: "true"},
+						Value: true,
+					},
+					Block: &ast.BlockStatement{
+						Token: token.Token{Type: token.IDENT, Literal: "x"},
+						Statements: []ast.Statement{
+							&ast.ExpressionStatement{
+								Token: token.Token{Type: token.IDENT, Literal: "x"},
+								Expression: &ast.InfixExpression{
+									Token: token.Token{Type: token.PLUS, Literal: "+"},
+									Left: &ast.Identifier{
+										Token: token.Token{Type: token.IDENT, Literal: "x"},
+										Value: "x",
+									},
+									Operator: "+",
+									Right: &ast.IntegerLiteral{
+										Token: token.Token{Type: token.INT, Literal: "1"},
+										Value: 1,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "while statement: infix expression condition",
+			input: "while (2 > 1) { x + 1; }",
+			expected: []ast.Statement{
+				&ast.WhileStatement{
+					Token: token.Token{Type: token.WHILE, Literal: "while"},
+					Condition: &ast.InfixExpression{
+						Token: token.Token{Type: token.GT, Literal: ">"},
+						Left: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "2"},
+							Value: 2,
+						},
+						Operator: ">",
+						Right: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "1"},
+							Value: 1,
+						},
+					},
+					Block: &ast.BlockStatement{
+						Token: token.Token{Type: token.IDENT, Literal: "x"},
+						Statements: []ast.Statement{
+							&ast.ExpressionStatement{
+								Token: token.Token{Type: token.IDENT, Literal: "x"},
+								Expression: &ast.InfixExpression{
+									Token: token.Token{Type: token.PLUS, Literal: "+"},
+									Left: &ast.Identifier{
+										Token: token.Token{Type: token.IDENT, Literal: "x"},
+										Value: "x",
+									},
+									Operator: "+",
+									Right: &ast.IntegerLiteral{
+										Token: token.Token{Type: token.INT, Literal: "1"},
+										Value: 1,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "while statement: prefix expression condition",
+			input: "while (!true) { x + 1; }",
+			expected: []ast.Statement{
+				&ast.WhileStatement{
+					Token: token.Token{Type: token.WHILE, Literal: "while"},
+					Condition: &ast.PrefixExpression{
+						Token:    token.Token{Type: token.BANG, Literal: "!"},
+						Operator: "!",
+						Right: &ast.Boolean{
+							Token: token.Token{Type: token.TRUE, Literal: "true"},
+							Value: true,
+						},
+					},
+					Block: &ast.BlockStatement{
+						Token: token.Token{Type: token.IDENT, Literal: "x"},
+						Statements: []ast.Statement{
+							&ast.ExpressionStatement{
+								Token: token.Token{Type: token.IDENT, Literal: "x"},
+								Expression: &ast.InfixExpression{
+									Token: token.Token{Type: token.PLUS, Literal: "+"},
+									Left: &ast.Identifier{
+										Token: token.Token{Type: token.IDENT, Literal: "x"},
+										Value: "x",
+									},
+									Operator: "+",
+									Right: &ast.IntegerLiteral{
+										Token: token.Token{Type: token.INT, Literal: "1"},
+										Value: 1,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "assignment expression",
+			input: "let x = 0; x = x + 1;",
+			expected: []ast.Statement{
+				&ast.LetStatement{
+					Token: token.Token{Type: token.LET, Literal: "let"},
+					Name: &ast.Identifier{
+						Token: token.Token{Type: token.IDENT, Literal: "x"},
+						Value: "x",
+					},
+					Value: &ast.IntegerLiteral{
+						Token: token.Token{Type: token.INT, Literal: "0"},
+						Value: 0,
+					},
+				},
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.IDENT, Literal: "x"},
+					Expression: &ast.AssignmentExpression{
+						Token: token.Token{Type: token.ASSIGN, Literal: "="},
+						Left: &ast.Identifier{
+							Token: token.Token{Type: token.IDENT, Literal: "x"},
+							Value: "x",
+						},
+						Right: &ast.InfixExpression{
+							Token: token.Token{Type: token.PLUS, Literal: "+"},
+							Left: &ast.Identifier{
+								Token: token.Token{Type: token.IDENT, Literal: "x"},
+								Value: "x",
+							},
+							Operator: "+",
+							Right: &ast.IntegerLiteral{
+								Token: token.Token{Type: token.INT, Literal: "1"},
+								Value: 1,
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range cases {

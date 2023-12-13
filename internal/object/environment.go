@@ -18,6 +18,10 @@ func NewEnvFromEnv(outer *Environment) *Environment {
 	}
 }
 
+func (e *Environment) Values() map[string]Object {
+	return e.vals
+}
+
 func (e *Environment) With(vals map[string]Object) *Environment {
 	for ident, val := range vals {
 		e.Set(ident, val)
@@ -36,6 +40,16 @@ func (e *Environment) Get(name string) (Object, bool) {
 }
 
 func (e *Environment) Set(name string, val Object) Object {
+	e.vals[name] = val
+	return val
+}
+
+func (e *Environment) Update(name string, val Object) Object {
+	_, ok := e.vals[name]
+	if !ok {
+		return NewErr("undefined variable '%s'", name)
+	}
+
 	e.vals[name] = val
 	return val
 }
