@@ -172,6 +172,34 @@ func evalIfExpression(expr *ast.IfExpression, env *object.Environment) object.Ob
 	return object.NullObject
 }
 
+func evalListIndexExpr(left, index object.Object) object.Object {
+	l := left.(*object.List)
+	idx := index.(*object.Integer).Value
+
+	max := int64(len(l.Elems) - 1)
+	if idx > max {
+		return object.NewErr("index out of bounds: %d", idx)
+	}
+
+	if idx < 0 {
+		idx = int64(len(l.Elems)) + idx
+	}
+
+	return l.Elems[idx]
+}
+
+func evalIndexExpr(left, index object.Object) object.Object {
+	if left.Type() != object.OBJ_LIST {
+		return object.NewErr("cannot index on non-list object %s", left.Type())
+	}
+
+	if index.Type() != object.OBJ_INTEGER {
+		return object.NewErr("cannot index using non-integer type %s", left.Type())
+	}
+
+	return evalListIndexExpr(left, index)
+}
+
 func evalWhileStatement(stmt *ast.WhileStatement, env *object.Environment) object.Object {
 	for object.IsTruthy(Eval(stmt.Condition, env)) {
 		evalBlockStatement(stmt.Block, env)
@@ -216,6 +244,13 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return object.NewStringObject(node.Value)
 	case *ast.Boolean:
 		return object.BoolFromNative(node.Value)
+	case *ast.ListLiteral:
+		elems := evalExpressions(node.Elems, env)
+		if len(elems) >= 1 && object.IsErr(elems[0]) {
+			return elems[0]
+		}
+
+		return object.NewListObject(elems)
 	case *ast.PrefixExpression:
 		right := Eval(node.Right, env) // evaluate the operand
 		if object.IsErr(right) {
@@ -241,6 +276,18 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 
 		return evalInfixExpr(node.Operator, left, right)
+	case *ast.IndexExpression:
+		left := Eval(node.Left, env)
+		if object.IsErr(left) {
+			return left
+		}
+
+		index := Eval(node.Index, env)
+		if object.IsErr(index) {
+			return index
+		}
+
+		return evalIndexExpr(left, index)
 	case *ast.BlockStatement:
 		return evalBlockStatement(node, env)
 	case *ast.IfExpression:

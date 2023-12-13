@@ -22,7 +22,9 @@ func Len(args ...object.Object) object.Object {
 
 	switch arg := args[0].(type) {
 	case *object.String:
-		return &object.Integer{Value: int64(len(arg.Value))}
+		return object.NewIntegerObject(int64(len(arg.Value)))
+	case *object.List:
+		return object.NewIntegerObject(int64(len(arg.Elems)))
 	default:
 		return object.NewErr("invalid argument %s", args[0].Type())
 	}

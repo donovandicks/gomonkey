@@ -54,6 +54,7 @@ func NewParser(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.ASSIGN, p.parseInfixExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
+	p.registerInfix(token.LBRACK, p.parseIndexExpression)
 
 	p.readToken()
 	p.readToken()
@@ -344,6 +345,21 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 func (p *Parser) parseCallExpression(fn ast.Expression) ast.Expression {
 	expr := &ast.CallExpression{Token: p.currToken, Function: fn}
 	expr.Arguments = p.parseListElements(token.RPAREN)
+	return expr
+}
+
+func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
+	expr := &ast.IndexExpression{Token: p.currToken, Left: left}
+
+	p.readToken()
+
+	expr.Index = p.parseExpression(LOWEST)
+
+	if !p.expectNext(token.RBRACK) {
+		return nil
+	}
+
+	p.readToken()
 	return expr
 }
 

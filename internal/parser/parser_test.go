@@ -752,6 +752,31 @@ func TestParser(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "index expression: typical",
+			input: "[1][1]",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.LBRACK, Literal: "["},
+					Expression: &ast.IndexExpression{
+						Token: token.Token{Type: token.LBRACK, Literal: "["},
+						Left: &ast.ListLiteral{
+							Token: token.Token{Type: token.LBRACK, Literal: "["},
+							Elems: []ast.Expression{
+								&ast.IntegerLiteral{
+									Token: token.Token{Type: token.INT, Literal: "1"},
+									Value: 1,
+								},
+							},
+						},
+						Index: &ast.IntegerLiteral{
+							Token: token.Token{Type: token.INT, Literal: "1"},
+							Value: 1,
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range cases {
@@ -854,6 +879,11 @@ func TestParser_OperatorPrecedence(t *testing.T) {
 			name:     "call expression",
 			input:    "add(1, 2 + 3, 4 * 5 + 6)",
 			expected: "add(1, (2 + 3), ((4 * 5) + 6))",
+		},
+		{
+			name:     "index expression",
+			input:    "a + [1, 2, 3][4] + b",
+			expected: "((a + ([1, 2, 3][4])) + b)",
 		},
 	}
 

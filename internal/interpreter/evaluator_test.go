@@ -256,6 +256,27 @@ func TestEvaluator(t *testing.T) {
 			input:  "len(1)",
 			output: object.NewErr("invalid argument INTEGER"),
 		},
+		{
+			name:  "list literal",
+			input: "[1, 2 + 2, 3 * 3]",
+			output: object.NewListObject(
+				[]object.Object{
+					object.NewIntegerObject(1),
+					object.NewIntegerObject(4),
+					object.NewIntegerObject(9),
+				},
+			),
+		},
+		{
+			name:   "list index expression: positive index",
+			input:  "[1, 2, 3][0]",
+			output: object.NewIntegerObject(1),
+		},
+		{
+			name:   "list index expression: negative index",
+			input:  "[1, 2, 3][-1]",
+			output: object.NewIntegerObject(3),
+		},
 	}
 
 	for _, testCase := range cases {
@@ -330,6 +351,11 @@ func TestEvaluator_Errors(t *testing.T) {
 			name:  "let binding: unbound identifier",
 			input: "x;",
 			err:   &object.Err{Msg: "undefined variable 'x'"},
+		},
+		{
+			name:  "list index expressoin: out of bounds",
+			input: "[1, 2, 3][4]",
+			err:   &object.Err{Msg: "index out of bounds: 4"},
 		},
 	}
 

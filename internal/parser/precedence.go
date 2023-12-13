@@ -19,6 +19,7 @@ const (
 	PRODUCT
 	PREFIX
 	CALL
+	INDEX
 )
 
 var Precedence PrecedenceTable = PrecedenceTable{
@@ -32,4 +33,5 @@ var Precedence PrecedenceTable = PrecedenceTable{
 	token.FSLASH: PRODUCT,
 	token.STAR:   PRODUCT,
 	token.LPAREN: CALL,
+	token.LBRACK: INDEX,
 }

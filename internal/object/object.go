@@ -19,6 +19,7 @@ const (
 	OBJ_ERR     ObjectType = "ERROR"
 	OBJ_STR     ObjectType = "STRING"
 	OBJ_BUILTIN ObjectType = "BUILTIN"
+	OBJ_LIST    ObjectType = "LIST"
 )
 
 var (
@@ -96,6 +97,27 @@ func NewFunctionObject(
 		Env:        env,
 	}
 }
+
+type List struct {
+	Elems []Object
+}
+
+func (l *List) Inspect() string {
+	var out strings.Builder
+
+	es := []string{}
+	for _, elem := range l.Elems {
+		es = append(es, elem.Inspect())
+	}
+
+	out.WriteString("[")
+	out.WriteString(strings.Join(es, ", "))
+	out.WriteString("]")
+
+	return out.String()
+}
+func (l *List) Type() ObjectType         { return OBJ_LIST }
+func NewListObject(elems []Object) *List { return &List{Elems: elems} }
 
 type Builtin struct {
 	Fn BuiltinFn
