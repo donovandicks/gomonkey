@@ -178,3 +178,25 @@ func (ae *AssignmentExpression) String() string {
 
 	return out.String()
 }
+
+type ListLiteral struct {
+	Token token.Token // the '[' token
+	Elems []Expression
+}
+
+func (ll *ListLiteral) expressionNode()      {}
+func (ll *ListLiteral) TokenLiteral() string { return ll.Token.Literal }
+func (ll *ListLiteral) String() string {
+	var out strings.Builder
+
+	es := []string{}
+	for _, expr := range ll.Elems {
+		es = append(es, expr.String())
+	}
+
+	out.WriteString("[")
+	out.WriteString(strings.Join(es, ", "))
+	out.WriteString("]")
+
+	return out.String()
+}

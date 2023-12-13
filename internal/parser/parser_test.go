@@ -675,6 +675,83 @@ func TestParser(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "list literal: same types",
+			input: "[1, 2, 3]",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.LBRACK, Literal: "["},
+					Expression: &ast.ListLiteral{
+						Token: token.Token{Type: token.LBRACK, Literal: "["},
+						Elems: []ast.Expression{
+							&ast.IntegerLiteral{
+								Token: token.Token{Type: token.INT, Literal: "1"},
+								Value: 1,
+							},
+							&ast.IntegerLiteral{
+								Token: token.Token{Type: token.INT, Literal: "2"},
+								Value: 2,
+							},
+							&ast.IntegerLiteral{
+								Token: token.Token{Type: token.INT, Literal: "3"},
+								Value: 3,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "list literals: mixed types",
+			input: `[1, "hello", fn(x) { x + 1 }]`,
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.LBRACK, Literal: "["},
+					Expression: &ast.ListLiteral{
+						Token: token.Token{Type: token.LBRACK, Literal: "["},
+						Elems: []ast.Expression{
+							&ast.IntegerLiteral{
+								Token: token.Token{Type: token.INT, Literal: "1"},
+								Value: 1,
+							},
+							&ast.StringLiteral{
+								Token: token.Token{Type: token.STRING, Literal: "hello"},
+								Value: "hello",
+							},
+							&ast.FunctionLiteral{
+								Token: token.Token{Type: token.FUNCTION, Literal: "fn"},
+								Parameters: []*ast.Identifier{
+									{
+										Token: token.Token{Type: token.IDENT, Literal: "x"},
+										Value: "x",
+									},
+								},
+								Body: &ast.BlockStatement{
+									Token: token.Token{Type: token.IDENT, Literal: "x"},
+									Statements: []ast.Statement{
+										&ast.ExpressionStatement{
+											Token: token.Token{Type: token.IDENT, Literal: "x"},
+											Expression: &ast.InfixExpression{
+												Token: token.Token{Type: token.PLUS, Literal: "+"},
+												Left: &ast.Identifier{
+													Token: token.Token{Type: token.IDENT, Literal: "x"},
+													Value: "x",
+												},
+												Operator: "+",
+												Right: &ast.IntegerLiteral{
+													Token: token.Token{Type: token.INT, Literal: "1"},
+													Value: 1,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range cases {

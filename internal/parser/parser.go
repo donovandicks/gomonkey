@@ -42,6 +42,7 @@ func NewParser(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.IF, p.parseIfExpression)
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
+	p.registerPrefix(token.LBRACK, p.parseListLiteral)
 
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
@@ -120,6 +121,38 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 
 func (p *Parser) parseStringLiteral() ast.Expression {
 	return &ast.StringLiteral{Token: p.currToken, Value: p.currToken.Literal}
+}
+
+func (p *Parser) parseListElements(end token.TokenType) []ast.Expression {
+	var exprs []ast.Expression
+
+	if p.nextToken.Type == end {
+		p.readToken()
+		return exprs
+	}
+
+	p.readToken()
+
+	exprs = append(exprs, p.parseExpression(LOWEST))
+
+	for p.nextToken.Type == token.COMMA {
+		p.readToken() // advance to ','
+		p.readToken() // advance to next expression
+		exprs = append(exprs, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectNext(end) {
+		return nil
+	}
+
+	p.readToken()
+	return exprs
+}
+
+func (p *Parser) parseListLiteral() ast.Expression {
+	lit := &ast.ListLiteral{Token: p.currToken}
+	lit.Elems = p.parseListElements(token.RBRACK)
+	return lit
 }
 
 func (p *Parser) parseBoolean() ast.Expression {
@@ -308,38 +341,9 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	return fn
 }
 
-func (p *Parser) parseCallArguments() []ast.Expression {
-	var args []ast.Expression
-
-	if p.expectNext(token.RPAREN) {
-		p.readToken() // advance to the closing ')'
-		return args
-	}
-
-	p.readToken()
-
-	args = append(args, p.parseExpression(LOWEST))
-
-	for p.expectNext(token.COMMA) {
-		p.readToken() // advance to the ','
-		p.readToken() // advance to the next expression
-
-		args = append(args, p.parseExpression(LOWEST))
-	}
-
-	if !p.expectNext(token.RPAREN) {
-		p.addError(ErrMissingCloser{expected: ")"})
-		return nil
-	}
-
-	p.readToken()
-	return args
-}
-
 func (p *Parser) parseCallExpression(fn ast.Expression) ast.Expression {
 	expr := &ast.CallExpression{Token: p.currToken, Function: fn}
-	expr.Arguments = p.parseCallArguments()
-
+	expr.Arguments = p.parseListElements(token.RPAREN)
 	return expr
 }
 
