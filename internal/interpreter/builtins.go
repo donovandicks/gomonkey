@@ -24,7 +24,7 @@ func Len(args ...object.Object) object.Object {
 	case *object.String:
 		return &object.Integer{Value: int64(len(arg.Value))}
 	default:
-		return object.NewErr("invalid argument %s to len", args[0].Type())
+		return object.NewErr("invalid argument %s", args[0].Type())
 	}
 }
 

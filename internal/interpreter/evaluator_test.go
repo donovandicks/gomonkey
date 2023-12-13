@@ -231,6 +231,31 @@ func TestEvaluator(t *testing.T) {
 			`,
 			output: object.NewIntegerObject(3),
 		},
+		{
+			name:   "builtin: len:: empty",
+			input:  `len("")`,
+			output: object.NewIntegerObject(0),
+		},
+		{
+			name:   "builtin: len:: normal",
+			input:  `len("hello")`,
+			output: object.NewIntegerObject(5),
+		},
+		{
+			name:   "builtin: len:: no args",
+			input:  `len()`,
+			output: object.NewErr("invalid number of args 0, expected 1"),
+		},
+		{
+			name:   "builtin: len:: too many args",
+			input:  `len("first", "second")`,
+			output: object.NewErr("invalid number of args 2, expected 1"),
+		},
+		{
+			name:   "builtin: len:: invalid type",
+			input:  "len(1)",
+			output: object.NewErr("invalid argument INTEGER"),
+		},
 	}
 
 	for _, testCase := range cases {
