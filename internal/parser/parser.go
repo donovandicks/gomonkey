@@ -175,8 +175,6 @@ func (p *Parser) parseMapLiteral() ast.Expression {
 		p.readToken() // advnace to the value expression
 		val := p.parseExpression(LOWEST)
 
-		fmt.Printf("parsed key=%s value=%s\n", key.String(), val.String())
-
 		m.Entries[key] = val
 		if !p.expectNext(token.RBRACE) && !p.expectNext(token.COMMA) {
 			fmt.Printf("exiting map parsing! expected '}' or comma after value=%s\n", val.String())

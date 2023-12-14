@@ -282,6 +282,21 @@ func TestEvaluator(t *testing.T) {
 			input:  "{}",
 			output: &object.Map{Entries: make(map[object.HashKey]object.KVPair)},
 		},
+		{
+			name:   "map index expression: string key",
+			input:  `{"a": 1}["a"]`,
+			output: object.NewIntegerObject(1),
+		},
+		{
+			name:   "map index expression: int key",
+			input:  `{1: "a"}[1]`,
+			output: object.NewStringObject("a"),
+		},
+		{
+			name:   "map index expression: expression key",
+			input:  `{3: "three"}[1+2]`,
+			output: object.NewStringObject("three"),
+		},
 	}
 
 	for _, testCase := range cases {
@@ -358,7 +373,7 @@ func TestEvaluator_Errors(t *testing.T) {
 			err:   &object.Err{Msg: "undefined variable 'x'"},
 		},
 		{
-			name:  "list index expressoin: out of bounds",
+			name:  "list index expression: out of bounds",
 			input: "[1, 2, 3][4]",
 			err:   &object.Err{Msg: "index out of bounds: 4"},
 		},

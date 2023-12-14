@@ -35,5 +35,5 @@ func Print(args ...object.Object) object.Object {
 		fmt.Println(arg.Inspect())
 	}
 
-	return object.NullObject
+	return nil
 }

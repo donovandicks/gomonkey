@@ -212,16 +212,33 @@ func evalListIndexExpr(left, index object.Object) object.Object {
 	return l.Elems[idx]
 }
 
+func evalMapIndexExpr(left, index object.Object) object.Object {
+	l := left.(*object.Map)
+	key, _ := index.(object.HashableObject)
+
+	kv, ok := l.Entries[key.Hash()]
+	if !ok {
+		return object.NewErr("no key found for %s (hash=%d)", key.Inspect(), key.Hash().Value)
+	}
+
+	return kv.Value
+}
+
 func evalIndexExpr(left, index object.Object) object.Object {
-	if left.Type() != object.OBJ_LIST {
-		return object.NewErr("cannot index on non-list object %s", left.Type())
+	switch left.Type() {
+	case object.OBJ_LIST:
+		if index.Type() != object.OBJ_INTEGER {
+			return object.NewErr("cannot index list using non-integer type %s", left.Type())
+		}
+		return evalListIndexExpr(left, index)
+	case object.OBJ_MAP:
+		if !object.IsHashable(index) {
+			return object.NewErr("cannot index map using non-hashable type %s", left.Type())
+		}
+		return evalMapIndexExpr(left, index)
+	default:
+		return object.NewErr("cannot index %s object", left.Type())
 	}
-
-	if index.Type() != object.OBJ_INTEGER {
-		return object.NewErr("cannot index using non-integer type %s", left.Type())
-	}
-
-	return evalListIndexExpr(left, index)
 }
 
 func evalWhileStatement(stmt *ast.WhileStatement, env *object.Environment) object.Object {

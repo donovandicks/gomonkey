@@ -40,6 +40,11 @@ type HashableObject interface {
 	Hash() HashKey
 }
 
+func IsHashable(o Object) bool {
+	_, ok := o.(HashableObject)
+	return ok
+}
+
 type Object interface {
 	Type() ObjectType
 	Inspect() string
