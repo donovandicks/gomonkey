@@ -277,6 +277,11 @@ func TestEvaluator(t *testing.T) {
 			input:  "[1, 2, 3][-1]",
 			output: object.NewIntegerObject(3),
 		},
+		{
+			name:   "map literal: empty",
+			input:  "{}",
+			output: &object.Map{Entries: make(map[object.HashKey]object.KVPair)},
+		},
 	}
 
 	for _, testCase := range cases {

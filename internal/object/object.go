@@ -2,6 +2,7 @@ package object
 
 import (
 	"fmt"
+	"hash/fnv"
 	"strings"
 
 	"github.com/donovandicks/gomonkey/internal/ast"
@@ -20,6 +21,7 @@ const (
 	OBJ_STR     ObjectType = "STRING"
 	OBJ_BUILTIN ObjectType = "BUILTIN"
 	OBJ_LIST    ObjectType = "LIST"
+	OBJ_MAP     ObjectType = "MAP"
 )
 
 var (
@@ -27,6 +29,16 @@ var (
 	FalseBool  = &Boolean{Value: false}
 	NullObject = &Null{}
 )
+
+type HashKey struct {
+	Type  ObjectType
+	Value uint64
+}
+
+type HashableObject interface {
+	Object
+	Hash() HashKey
+}
 
 type Object interface {
 	Type() ObjectType
@@ -39,14 +51,20 @@ type Integer struct {
 
 func (i *Integer) Inspect() string        { return fmt.Sprintf("%d", i.Value) }
 func (i *Integer) Type() ObjectType       { return OBJ_INTEGER }
+func (i *Integer) Hash() HashKey          { return HashKey{Type: i.Type(), Value: uint64(i.Value)} }
 func NewIntegerObject(val int64) *Integer { return &Integer{Value: val} }
 
 type String struct {
 	Value string
 }
 
-func (s *String) Inspect() string        { return s.Value }
-func (s *String) Type() ObjectType       { return OBJ_STR }
+func (s *String) Inspect() string  { return s.Value }
+func (s *String) Type() ObjectType { return OBJ_STR }
+func (s *String) Hash() HashKey {
+	h := fnv.New64a()
+	h.Write([]byte(s.Value))
+	return HashKey{Type: s.Type(), Value: h.Sum64()}
+}
 func NewStringObject(val string) *String { return &String{Value: val} }
 
 type Boolean struct {
@@ -118,6 +136,38 @@ func (l *List) Inspect() string {
 }
 func (l *List) Type() ObjectType         { return OBJ_LIST }
 func NewListObject(elems []Object) *List { return &List{Elems: elems} }
+
+type KVPair struct {
+	Key   Object
+	Value Object
+}
+
+func NewKVPair(k, v Object) KVPair {
+	return KVPair{Key: k, Value: v}
+}
+
+type Map struct {
+	Entries map[HashKey]KVPair
+}
+
+func (m *Map) Inspect() string {
+	var out strings.Builder
+
+	kvs := []string{}
+	for _, pair := range m.Entries {
+		kvs = append(kvs, fmt.Sprintf("%s:%s", pair.Key.Inspect(), pair.Value.Inspect()))
+	}
+
+	out.WriteString(fmt.Sprintf("{%s}", strings.Join(kvs, ", ")))
+	return out.String()
+}
+func (m *Map) Type() ObjectType { return OBJ_MAP }
+
+// func NewMapObject(entries map[Object]Object) *Map {
+// 	return &Map{
+// 		Entries: entries,
+// 	}
+// }
 
 type Builtin struct {
 	Fn BuiltinFn

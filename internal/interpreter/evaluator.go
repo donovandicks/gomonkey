@@ -172,6 +172,30 @@ func evalIfExpression(expr *ast.IfExpression, env *object.Environment) object.Ob
 	return object.NullObject
 }
 
+func evalMapLiteral(node *ast.MapLiteral, env *object.Environment) object.Object {
+	pairs := make(map[object.HashKey]object.KVPair, len(node.Entries))
+	for key, val := range node.Entries {
+		k := Eval(key, env)
+		if object.IsErr(k) {
+			return k
+		}
+
+		hashable, ok := k.(object.HashableObject)
+		if !ok {
+			return object.NewErr("cannot use unhashable type %s as hash key", k.Type())
+		}
+
+		v := Eval(val, env)
+		if object.IsErr(v) {
+			return v
+		}
+
+		pairs[hashable.Hash()] = object.KVPair{Key: k, Value: v}
+	}
+
+	return &object.Map{Entries: pairs}
+}
+
 func evalListIndexExpr(left, index object.Object) object.Object {
 	l := left.(*object.List)
 	idx := index.(*object.Integer).Value
@@ -251,6 +275,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 
 		return object.NewListObject(elems)
+	case *ast.MapLiteral:
+		return evalMapLiteral(node, env)
 	case *ast.PrefixExpression:
 		right := Eval(node.Right, env) // evaluate the operand
 		if object.IsErr(right) {

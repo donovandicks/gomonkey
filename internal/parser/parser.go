@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/donovandicks/gomonkey/internal/ast"
@@ -43,6 +44,7 @@ func NewParser(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
 	p.registerPrefix(token.LBRACK, p.parseListLiteral)
+	p.registerPrefix(token.LBRACE, p.parseMapLiteral)
 
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
@@ -154,6 +156,44 @@ func (p *Parser) parseListLiteral() ast.Expression {
 	lit := &ast.ListLiteral{Token: p.currToken}
 	lit.Elems = p.parseListElements(token.RBRACK)
 	return lit
+}
+
+func (p *Parser) parseMapLiteral() ast.Expression {
+	m := &ast.MapLiteral{Token: p.currToken}
+	m.Entries = make(map[ast.Expression]ast.Expression)
+
+	for !p.expectNext(token.RBRACE) {
+		p.readToken() // advance to the key expression
+
+		key := p.parseExpression(LOWEST)
+		if !p.expectNext(token.COLON) {
+			fmt.Printf("exiting map parsing! expected comma after key=%s\n", key.String())
+			return nil
+		}
+
+		p.readToken() // advance to the colon
+		p.readToken() // advnace to the value expression
+		val := p.parseExpression(LOWEST)
+
+		fmt.Printf("parsed key=%s value=%s\n", key.String(), val.String())
+
+		m.Entries[key] = val
+		if !p.expectNext(token.RBRACE) && !p.expectNext(token.COMMA) {
+			fmt.Printf("exiting map parsing! expected '}' or comma after value=%s\n", val.String())
+			return nil
+		}
+
+		if p.expectNext(token.COMMA) {
+			p.readToken() // advance to the comma
+		}
+	}
+
+	if !p.expectNext(token.RBRACE) {
+		return nil
+	}
+
+	p.readToken()
+	return m
 }
 
 func (p *Parser) parseBoolean() ast.Expression {

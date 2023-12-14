@@ -25,6 +25,7 @@ const (
 	RBRACE              = "}"
 	LBRACK              = "["
 	RBRACK              = "]"
+	COLON               = ":"
 	FUNCTION            = "FUNCTION"
 	LET                 = "LET"
 	RETURN              = "RETURN"

@@ -8,6 +8,7 @@ import (
 	"github.com/donovandicks/gomonkey/internal/parser"
 	"github.com/donovandicks/gomonkey/internal/token"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/maps"
 )
 
 func TestParser(t *testing.T) {
@@ -777,6 +778,19 @@ func TestParser(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "map expression: empty",
+			input: `{}`,
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.Token{Type: token.LBRACE, Literal: "{"},
+					Expression: &ast.MapLiteral{
+						Token:   token.Token{Type: token.LBRACE, Literal: "{"},
+						Entries: map[ast.Expression]ast.Expression{},
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range cases {
@@ -798,6 +812,71 @@ func TestParser(t *testing.T) {
 			if tc.expected != nil {
 				assert.EqualValues(t, tc.expected, program.Statements)
 			}
+		})
+	}
+}
+
+func TestParser_MapLiteral(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name     string
+		input    string
+		expected *ast.MapLiteral
+	}{
+		{
+			name:  "map expression: literal",
+			input: `{"a": "b", 1: "one", "b": true}`,
+			expected: &ast.MapLiteral{
+				Token: token.Token{Type: token.LBRACE, Literal: "{"},
+				Entries: map[ast.Expression]ast.Expression{
+					&ast.StringLiteral{
+						Token: token.Token{Type: token.STRING, Literal: "a"},
+						Value: "a",
+					}: &ast.StringLiteral{
+						Token: token.Token{Type: token.STRING, Literal: "b"},
+						Value: "b",
+					},
+					&ast.IntegerLiteral{
+						Token: token.Token{Type: token.INT, Literal: "1"},
+						Value: 1,
+					}: &ast.StringLiteral{
+						Token: token.Token{Type: token.STRING, Literal: "one"},
+						Value: "one",
+					},
+					&ast.StringLiteral{
+						Token: token.Token{Type: token.STRING, Literal: "b"},
+						Value: "b",
+					}: &ast.Boolean{
+						Token: token.Token{Type: token.TRUE, Literal: "true"},
+						Value: true,
+					},
+				},
+			},
+		},
+	}
+
+	for _, testCase := range cases {
+		tc := testCase
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			l := lexer.NewLexer(tc.input)
+			p := parser.NewParser(l)
+
+			program := p.ParseProgram()
+			assert.NotNil(t, program)
+
+			stmt := program.Statements[0]
+			s, ok := stmt.(*ast.ExpressionStatement)
+			assert.True(t, ok)
+			m, ok := s.Expression.(*ast.MapLiteral)
+			assert.True(t, ok)
+
+			assert.Equal(t, tc.expected.Token, m.Token)
+			assert.ElementsMatch(t, maps.Keys(tc.expected.Entries), maps.Keys(m.Entries))
+			assert.ElementsMatch(t, maps.Values(tc.expected.Entries), maps.Values(m.Entries))
 		})
 	}
 }

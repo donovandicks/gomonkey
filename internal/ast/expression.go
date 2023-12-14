@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/donovandicks/gomonkey/internal/token"
@@ -28,6 +29,12 @@ type IntegerLiteral struct {
 func (il *IntegerLiteral) expressionNode()      {}
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *IntegerLiteral) String() string       { return il.Token.Literal }
+func NewIntegerLiteral(value int64) *IntegerLiteral {
+	return &IntegerLiteral{
+		Token: token.Token{Type: token.INT, Literal: fmt.Sprint(value)},
+		Value: value,
+	}
+}
 
 type StringLiteral struct {
 	Token token.Token
@@ -37,6 +44,12 @@ type StringLiteral struct {
 func (sl *StringLiteral) expressionNode()      {}
 func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Literal }
 func (sl *StringLiteral) String() string       { return sl.Token.Literal }
+func NewStringLiteral(value string) *StringLiteral {
+	return &StringLiteral{
+		Token: token.Token{Type: token.STRING, Literal: value},
+		Value: value,
+	}
+}
 
 type PrefixExpression struct {
 	Token    token.Token
@@ -86,6 +99,19 @@ type Boolean struct {
 func (b *Boolean) expressionNode()      {}
 func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
 func (b *Boolean) String() string       { return b.Token.Literal }
+func NewBoolean(value bool) *Boolean {
+	var tt token.TokenType
+	if value {
+		tt = token.TRUE
+	} else {
+		tt = token.FALSE
+	}
+
+	return &Boolean{
+		Token: token.Token{Type: tt, Literal: fmt.Sprint(value)},
+		Value: value,
+	}
+}
 
 type IfExpression struct {
 	Token       token.Token
@@ -198,6 +224,25 @@ func (ll *ListLiteral) String() string {
 	out.WriteString(strings.Join(es, ", "))
 	out.WriteString("]")
 
+	return out.String()
+}
+
+type MapLiteral struct {
+	Token   token.Token // the '{' token
+	Entries map[Expression]Expression
+}
+
+func (ml *MapLiteral) expressionNode()      {}
+func (ml *MapLiteral) TokenLiteral() string { return ml.Token.Literal }
+func (ml *MapLiteral) String() string {
+	var out strings.Builder
+
+	kvs := []string{}
+	for k, v := range ml.Entries {
+		kvs = append(kvs, fmt.Sprintf("%s:%s", k.String(), v.String()))
+	}
+
+	out.WriteString(fmt.Sprintf("{%s}", strings.Join(kvs, ", ")))
 	return out.String()
 }
 

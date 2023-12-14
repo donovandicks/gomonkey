@@ -16,7 +16,7 @@ func TestNextToken(t *testing.T) {
 	}{
 		{
 			name:  "special characters",
-			input: "=+(){}[],;!-/*<>",
+			input: "=+(){}[],;!-/*<>:",
 			expTokens: []token.Token{
 				{Type: token.ASSIGN, Literal: "="},
 				{Type: token.PLUS, Literal: "+"},
@@ -34,6 +34,7 @@ func TestNextToken(t *testing.T) {
 				{Type: token.STAR, Literal: "*"},
 				{Type: token.LT, Literal: "<"},
 				{Type: token.GT, Literal: ">"},
+				{Type: token.COLON, Literal: ":"},
 			},
 		},
 		{
