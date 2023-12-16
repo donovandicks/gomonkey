@@ -87,6 +87,7 @@ func BoolFromNative(val bool) *Boolean {
 }
 
 type Function struct {
+	Name       *ast.Identifier
 	Parameters []*ast.Identifier
 	Body       *ast.BlockStatement
 	Env        *Environment
@@ -100,9 +101,12 @@ func (f *Function) Inspect() string {
 		ps = append(ps, p.String())
 	}
 
-	out.WriteString("fn(")
-	out.WriteString(strings.Join(ps, ", "))
-	out.WriteString(") {\n")
+	out.WriteString("fn")
+	if f.Name != nil {
+		out.WriteString(fmt.Sprintf(" %s", f.Name.String()))
+	}
+	out.WriteString(fmt.Sprintf("(%s)", strings.Join(ps, ", ")))
+	out.WriteString(" {\n")
 	out.WriteString(f.Body.String())
 	out.WriteString("\n}")
 
@@ -110,11 +114,13 @@ func (f *Function) Inspect() string {
 }
 func (f *Function) Type() ObjectType { return OBJ_FUNC }
 func NewFunctionObject(
+	name *ast.Identifier,
 	params []*ast.Identifier,
 	body *ast.BlockStatement,
 	env *Environment,
 ) *Function {
 	return &Function{
+		Name:       name,
 		Parameters: params,
 		Body:       body,
 		Env:        env,

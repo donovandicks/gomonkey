@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/donovandicks/gomonkey/internal/token"
@@ -95,6 +96,32 @@ func (ws *WhileStatement) String() string {
 	return out.String()
 }
 
+type FunctionStatement struct {
+	Token      token.Token // the `fn` token
+	Name       *Identifier // the function name identifier
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (fs *FunctionStatement) statementNode()       {}
+func (fs *FunctionStatement) TokenLiteral() string { return fs.Token.Literal }
+func (fs *FunctionStatement) String() string {
+	var out strings.Builder
+
+	params := []string{}
+	for _, param := range fs.Parameters {
+		params = append(params, param.String())
+	}
+
+	out.WriteString(fs.TokenLiteral())
+	out.WriteString(" ")
+	out.WriteString(fs.Name.String())
+	out.WriteString(fmt.Sprintf("(%s)", strings.Join(params, ", ")))
+	out.WriteString(fs.Body.String())
+
+	return out.String()
+}
+
 type BlockStatement struct {
 	Token      token.Token
 	Statements []Statement
@@ -114,4 +141,8 @@ func (bs *BlockStatement) String() string {
 	}
 
 	return out.String()
+}
+
+type ClassStatement struct {
+	Token token.Token // the `class` token
 }

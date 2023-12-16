@@ -347,8 +347,12 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 		env.Set(node.Name.Value, val)
 		return nil
-	case *ast.FunctionLiteral:
-		return object.NewFunctionObject(node.Parameters, node.Body, env)
+	case *ast.FunctionStatement: // named func stmt
+		fn := object.NewFunctionObject(node.Name, node.Parameters, node.Body, env)
+		env.Set(node.Name.Value, fn)
+		return nil
+	case *ast.FunctionLiteral: // anon func expr
+		return object.NewFunctionObject(nil, node.Parameters, node.Body, env)
 	case *ast.CallExpression:
 		f := Eval(node.Function, env)
 		if object.IsErr(f) {

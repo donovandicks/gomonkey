@@ -20,6 +20,12 @@ type Identifier struct {
 func (i *Identifier) expressionNode()      {}
 func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
 func (i *Identifier) String() string       { return i.Value }
+func NewIdentifier(val string) *Identifier {
+	return &Identifier{
+		Token: token.Token{Type: token.IDENT, Literal: val},
+		Value: val,
+	}
+}
 
 type IntegerLiteral struct {
 	Token token.Token

@@ -495,6 +495,44 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	return block
 }
 
+func (p *Parser) parseFunctionStatement() ast.Statement {
+	fn := &ast.FunctionStatement{Token: p.currToken}
+
+	if !p.expectNext(token.IDENT) {
+		p.addError(ErrNextTokenInvalid{expected: token.IDENT, actual: p.nextToken.Type})
+		return nil
+	}
+
+	p.readToken() // advance to the function name
+
+	ident := p.parseIdentifier()
+	name, ok := ident.(*ast.Identifier)
+	if !ok {
+		p.addError(ErrParseError{expected: token.IDENT, actual: p.currToken.Literal})
+		return nil
+	}
+
+	fn.Name = name
+
+	p.readToken() // advance to the '('
+
+	fn.Parameters = p.parseFunctionParameters()
+
+	if !p.expectNext(token.LBRACE) {
+		p.addError(ErrMissingOpener{expected: "{"})
+		return nil
+	}
+
+	p.readToken() // advance to the opening brace
+
+	fn.Body = p.parseBlockStatement()
+	return fn
+}
+
+func (p *Parser) parseClassStatement() ast.Statement {
+	return nil
+}
+
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.currToken.Type {
 	case token.LET:
@@ -503,6 +541,10 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseReturnStatement()
 	case token.WHILE:
 		return p.parseWhileStatement()
+	case token.CLASS:
+		return p.parseClassStatement()
+	case token.FUNCTION:
+		return p.parseFunctionStatement()
 	default:
 		return p.parseExpressionStatement()
 	}

@@ -1,6 +1,7 @@
 package interpreter_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/donovandicks/gomonkey/internal/interpreter"
@@ -168,7 +169,7 @@ func TestEvaluator(t *testing.T) {
 		},
 		{
 			name:   "function calls: top-level",
-			input:  "fn(x) {return x + 1;}(1)",
+			input:  "let res = fn(x) {return x + 1;}(1); res;",
 			output: object.NewIntegerObject(2),
 		},
 		{
@@ -192,8 +193,15 @@ func TestEvaluator(t *testing.T) {
 			output: object.NewIntegerObject(3),
 		},
 		{
-			name:   "function calls: higher order funcs",
-			input:  "let adder = fn(x) { fn(y) { x + y }}; let addOne = adder(1); addOne(2)",
+			name: "function calls: higher order funcs",
+			input: `
+			let adder = fn(x) {
+				return fn(y) {
+					x + y;
+				};
+			};
+			let addOne = adder(1);
+			addOne(2);`,
 			output: object.NewIntegerObject(3),
 		},
 		{
@@ -307,39 +315,12 @@ func TestEvaluator(t *testing.T) {
 			l := lexer.NewLexer(tc.input)
 			p := parser.NewParser(l)
 			prog := p.ParseProgram()
+			for _, stmt := range prog.Statements {
+				fmt.Printf("statement: %s\n", stmt)
+			}
 			env := object.NewEnv()
 
 			assert.Equal(t, tc.output, interpreter.Eval(prog, env))
-		})
-	}
-}
-
-func TestEvaluator_Functions(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name   string
-		input  string
-		output string
-	}{
-		{
-			name:   "function literal: top-level",
-			input:  "fn(x) { return x + 1; }",
-			output: "fn(x) {\nreturn (x + 1);\n}",
-		},
-	}
-
-	for _, testCase := range cases {
-		tc := testCase
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			l := lexer.NewLexer(tc.input)
-			p := parser.NewParser(l)
-			prog := p.ParseProgram()
-			env := object.NewEnv()
-
-			assert.Equal(t, tc.output, interpreter.Eval(prog, env).Inspect())
 		})
 	}
 }

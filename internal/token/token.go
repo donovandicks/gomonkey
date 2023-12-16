@@ -35,6 +35,8 @@ const (
 	FALSE               = "FALSE"
 	STRING              = "STRING"
 	WHILE               = "WHILE"
+	FOR                 = "FOR"
+	CLASS               = "CLASS"
 )
 
 var Keywords = map[string]TokenType{
@@ -46,6 +48,8 @@ var Keywords = map[string]TokenType{
 	"true":   TRUE,
 	"false":  FALSE,
 	"while":  WHILE,
+	"for":    FOR,
+	"class":  CLASS,
 }
 
 type Token struct {
@@ -55,6 +59,15 @@ type Token struct {
 
 func New(tokenType TokenType, literal byte) Token {
 	return Token{Type: tokenType, Literal: string(literal)}
+}
+
+func NewKeyword(kw string) Token {
+	tt, ok := Keywords[kw]
+	if !ok {
+		panic("invalid keyword")
+	}
+
+	return Token{Type: tt, Literal: kw}
 }
 
 func LookupIdent(ident string) TokenType {

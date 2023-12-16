@@ -354,40 +354,26 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
-			name:  "function literal: multiple params",
-			input: "fn(x, y) { x + y; }",
+			name:  "function statement: multiple params",
+			input: "fn add(x, y) { x + y; }",
 			expected: []ast.Statement{
-				&ast.ExpressionStatement{
+				&ast.FunctionStatement{
 					Token: token.Token{Type: token.FUNCTION, Literal: "fn"},
-					Expression: &ast.FunctionLiteral{
-						Token: token.Token{Type: token.FUNCTION, Literal: "fn"},
-						Parameters: []*ast.Identifier{
-							{
+					Name:  ast.NewIdentifier("add"),
+					Parameters: []*ast.Identifier{
+						ast.NewIdentifier("x"),
+						ast.NewIdentifier("y"),
+					},
+					Body: &ast.BlockStatement{
+						Token: token.Token{Type: token.IDENT, Literal: "x"},
+						Statements: []ast.Statement{
+							&ast.ExpressionStatement{
 								Token: token.Token{Type: token.IDENT, Literal: "x"},
-								Value: "x",
-							},
-							{
-								Token: token.Token{Type: token.IDENT, Literal: "y"},
-								Value: "y",
-							},
-						},
-						Body: &ast.BlockStatement{
-							Token: token.Token{Type: token.IDENT, Literal: "x"},
-							Statements: []ast.Statement{
-								&ast.ExpressionStatement{
-									Token: token.Token{Type: token.IDENT, Literal: "x"},
-									Expression: &ast.InfixExpression{
-										Token: token.Token{Type: token.PLUS, Literal: "+"},
-										Left: &ast.Identifier{
-											Token: token.Token{Type: token.IDENT, Literal: "x"},
-											Value: "x",
-										},
-										Operator: "+",
-										Right: &ast.Identifier{
-											Token: token.Token{Type: token.IDENT, Literal: "y"},
-											Value: "y",
-										},
-									},
+								Expression: &ast.InfixExpression{
+									Token:    token.Token{Type: token.PLUS, Literal: "+"},
+									Left:     ast.NewIdentifier("x"),
+									Operator: "+",
+									Right:    ast.NewIdentifier("y"),
 								},
 							},
 						},
@@ -397,28 +383,18 @@ func TestParser(t *testing.T) {
 		},
 		{
 			name:  "function literal: one param",
-			input: "fn(x) { x; }",
+			input: "fn echo(x) { x; }",
 			expected: []ast.Statement{
-				&ast.ExpressionStatement{
-					Token: token.Token{Type: token.FUNCTION, Literal: "fn"},
-					Expression: &ast.FunctionLiteral{
-						Token: token.Token{Type: token.FUNCTION, Literal: "fn"},
-						Parameters: []*ast.Identifier{
-							{
-								Token: token.Token{Type: token.IDENT, Literal: "x"},
-								Value: "x",
-							},
-						},
-						Body: &ast.BlockStatement{
-							Token: token.Token{Type: token.IDENT, Literal: "x"},
-							Statements: []ast.Statement{
-								&ast.ExpressionStatement{
-									Token: token.Token{Type: token.IDENT, Literal: "x"},
-									Expression: &ast.Identifier{
-										Token: token.Token{Type: token.IDENT, Literal: "x"},
-										Value: "x",
-									},
-								},
+				&ast.FunctionStatement{
+					Token:      token.Token{Type: token.FUNCTION, Literal: "fn"},
+					Name:       ast.NewIdentifier("echo"),
+					Parameters: []*ast.Identifier{ast.NewIdentifier("x")},
+					Body: &ast.BlockStatement{
+						Token: token.Token{Type: token.IDENT, Literal: "x"},
+						Statements: []ast.Statement{
+							&ast.ExpressionStatement{
+								Token:      token.Token{Type: token.IDENT, Literal: "x"},
+								Expression: ast.NewIdentifier("x"),
 							},
 						},
 					},
@@ -427,22 +403,17 @@ func TestParser(t *testing.T) {
 		},
 		{
 			name:  "function literal: no params",
-			input: "fn() { 5; }",
+			input: "fn print5() { 5; }",
 			expected: []ast.Statement{
-				&ast.ExpressionStatement{
+				&ast.FunctionStatement{
 					Token: token.Token{Type: token.FUNCTION, Literal: "fn"},
-					Expression: &ast.FunctionLiteral{
-						Token: token.Token{Type: token.FUNCTION, Literal: "fn"},
-						Body: &ast.BlockStatement{
-							Token: token.Token{Type: token.INT, Literal: "5"},
-							Statements: []ast.Statement{
-								&ast.ExpressionStatement{
-									Token: token.Token{Type: token.INT, Literal: "5"},
-									Expression: &ast.IntegerLiteral{
-										Token: token.Token{Type: token.INT, Literal: "5"},
-										Value: 5,
-									},
-								},
+					Name:  ast.NewIdentifier("print5"),
+					Body: &ast.BlockStatement{
+						Token: token.Token{Type: token.INT, Literal: "5"},
+						Statements: []ast.Statement{
+							&ast.ExpressionStatement{
+								Token:      token.Token{Type: token.INT, Literal: "5"},
+								Expression: ast.NewIntegerLiteral(5),
 							},
 						},
 					},
@@ -787,6 +758,108 @@ func TestParser(t *testing.T) {
 					Expression: &ast.MapLiteral{
 						Token:   token.Token{Type: token.LBRACE, Literal: "{"},
 						Entries: map[ast.Expression]ast.Expression{},
+					},
+				},
+			},
+		},
+		{
+			name:  "function expression: one parameter",
+			input: "let add1 = fn(x) { x + 1 }",
+			expected: []ast.Statement{
+				&ast.LetStatement{
+					Token: token.NewKeyword("let"),
+					Name:  ast.NewIdentifier("add1"),
+					Value: &ast.FunctionLiteral{
+						Token: token.NewKeyword("fn"),
+						Parameters: []*ast.Identifier{
+							ast.NewIdentifier("x"),
+						},
+						Body: &ast.BlockStatement{
+							Token: token.Token{Type: token.IDENT, Literal: "x"},
+							Statements: []ast.Statement{
+								&ast.ExpressionStatement{
+									Token: token.Token{Type: token.IDENT, Literal: "x"},
+									Expression: &ast.InfixExpression{
+										Token:    token.Token{Type: token.PLUS, Literal: "+"},
+										Left:     ast.NewIdentifier("x"),
+										Operator: "+",
+										Right:    ast.NewIntegerLiteral(1),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "function expression: multi parameter",
+			input: "let add = fn(x, y) { x + y }",
+			expected: []ast.Statement{
+				&ast.LetStatement{
+					Token: token.NewKeyword("let"),
+					Name:  ast.NewIdentifier("add"),
+					Value: &ast.FunctionLiteral{
+						Token: token.NewKeyword("fn"),
+						Parameters: []*ast.Identifier{
+							ast.NewIdentifier("x"),
+							ast.NewIdentifier("y"),
+						},
+						Body: &ast.BlockStatement{
+							Token: token.Token{Type: token.IDENT, Literal: "x"},
+							Statements: []ast.Statement{
+								&ast.ExpressionStatement{
+									Token: token.Token{Type: token.IDENT, Literal: "x"},
+									Expression: &ast.InfixExpression{
+										Token:    token.Token{Type: token.PLUS, Literal: "+"},
+										Left:     ast.NewIdentifier("x"),
+										Operator: "+",
+										Right:    ast.NewIdentifier("y"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "function statement: higher order",
+			input: `
+			fn adder(x) {
+				fn applier(y) {
+					x + y;
+				}
+			}
+			`,
+			expected: []ast.Statement{
+				&ast.FunctionStatement{
+					Token:      token.NewKeyword("fn"),
+					Name:       ast.NewIdentifier("adder"),
+					Parameters: []*ast.Identifier{ast.NewIdentifier("x")},
+					Body: &ast.BlockStatement{
+						Token: token.NewKeyword("fn"),
+						Statements: []ast.Statement{
+							&ast.FunctionStatement{
+								Token:      token.NewKeyword("fn"),
+								Name:       ast.NewIdentifier("applier"),
+								Parameters: []*ast.Identifier{ast.NewIdentifier("y")},
+								Body: &ast.BlockStatement{
+									Token: token.Token{Type: token.IDENT, Literal: "x"},
+									Statements: []ast.Statement{
+										&ast.ExpressionStatement{
+											Token: token.Token{Type: token.IDENT, Literal: "x"},
+											Expression: &ast.InfixExpression{
+												Token:    token.New(token.PLUS, '+'),
+												Left:     ast.NewIdentifier("x"),
+												Operator: "+",
+												Right:    ast.NewIdentifier("y"),
+											},
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
