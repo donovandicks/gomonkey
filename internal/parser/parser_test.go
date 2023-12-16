@@ -706,12 +706,18 @@ func TestParser(t *testing.T) {
 											Expression: &ast.InfixExpression{
 												Token: token.Token{Type: token.PLUS, Literal: "+"},
 												Left: &ast.Identifier{
-													Token: token.Token{Type: token.IDENT, Literal: "x"},
+													Token: token.Token{
+														Type:    token.IDENT,
+														Literal: "x",
+													},
 													Value: "x",
 												},
 												Operator: "+",
 												Right: &ast.IntegerLiteral{
-													Token: token.Token{Type: token.INT, Literal: "1"},
+													Token: token.Token{
+														Type:    token.INT,
+														Literal: "1",
+													},
 													Value: 1,
 												},
 											},

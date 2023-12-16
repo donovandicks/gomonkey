@@ -149,9 +149,19 @@ func evalInfixExpr(operator string, left, right object.Object) object.Object {
 	case operator == "!=":
 		return object.BoolFromNative(left != right)
 	case left.Type() != right.Type():
-		return object.NewErr("type error: cannot perform '%s' on %s, %s", operator, left.Type(), right.Type())
+		return object.NewErr(
+			"type error: cannot perform '%s' on %s, %s",
+			operator,
+			left.Type(),
+			right.Type(),
+		)
 	default:
-		return object.NewErr("unknown operator '%s' for types %s, %s", operator, left.Type(), right.Type())
+		return object.NewErr(
+			"unknown operator '%s' for types %s, %s",
+			operator,
+			left.Type(),
+			right.Type(),
+		)
 	}
 }
 
@@ -270,7 +280,6 @@ func applyFunc(f object.Object, args []object.Object) object.Object {
 	default:
 		return object.NewErr("undefined function '%s'", fn.Type())
 	}
-
 }
 
 func Eval(node ast.Node, env *object.Environment) object.Object {

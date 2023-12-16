@@ -8,8 +8,10 @@ import (
 	"github.com/donovandicks/gomonkey/internal/ast"
 )
 
-type ObjectType string
-type BuiltinFn func(args ...Object) Object
+type (
+	ObjectType string
+	BuiltinFn  func(args ...Object) Object
+)
 
 const (
 	OBJ_INTEGER ObjectType = "INTEGER"
