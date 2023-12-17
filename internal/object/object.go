@@ -14,16 +14,18 @@ type (
 )
 
 const (
-	OBJ_INTEGER ObjectType = "INTEGER"
-	OBJ_BOOLEAN ObjectType = "BOOLEAN"
-	OBJ_FUNC    ObjectType = "FUNCTION"
-	OBJ_NULL    ObjectType = "NULL"
-	OBJ_RETURN  ObjectType = "RETURN"
-	OBJ_ERR     ObjectType = "ERROR"
-	OBJ_STR     ObjectType = "STRING"
-	OBJ_BUILTIN ObjectType = "BUILTIN"
-	OBJ_LIST    ObjectType = "LIST"
-	OBJ_MAP     ObjectType = "MAP"
+	OBJ_INTEGER  ObjectType = "INTEGER"
+	OBJ_BOOLEAN  ObjectType = "BOOLEAN"
+	OBJ_FUNC     ObjectType = "FUNCTION"
+	OBJ_NULL     ObjectType = "NULL"
+	OBJ_RETURN   ObjectType = "RETURN"
+	OBJ_ERR      ObjectType = "ERROR"
+	OBJ_STR      ObjectType = "STRING"
+	OBJ_BUILTIN  ObjectType = "BUILTIN"
+	OBJ_LIST     ObjectType = "LIST"
+	OBJ_MAP      ObjectType = "MAP"
+	OBJ_CLASS    ObjectType = "CLASS"
+	OBJ_INSTANCE ObjectType = "INSTANCE"
 )
 
 var (
@@ -129,6 +131,59 @@ func NewFunctionObject(
 	}
 }
 
+type Class struct {
+	Name    *ast.Identifier
+	Methods []*ast.FunctionStatement
+	Env     *Environment
+}
+
+func (cls *Class) Inspect() string {
+	var out strings.Builder
+
+	out.WriteString(fmt.Sprintf("class %s {}", cls.Name))
+
+	return out.String()
+}
+func (cls *Class) Type() ObjectType { return OBJ_CLASS }
+func NewClassObject(
+	name *ast.Identifier,
+	methods []*ast.FunctionStatement,
+	env *Environment,
+) *Class {
+	return &Class{
+		Name:    name,
+		Methods: methods,
+		Env:     env,
+	}
+}
+
+type Instance struct {
+	class *Class
+	State map[string]Object
+}
+
+func (in *Instance) Inspect() string {
+	return fmt.Sprintf("<class: %s> instance", in.class.Name)
+}
+func (in *Instance) Type() ObjectType { return OBJ_INSTANCE }
+func (in *Instance) Get(key string) Object {
+	obj, ok := in.State[key]
+	if !ok {
+		return nil
+	}
+
+	return obj
+}
+func (in *Instance) Set(key string, value Object) {
+	in.State[key] = value
+}
+func NewInstance(class *Class) *Instance {
+	return &Instance{
+		class: class,
+		State: make(map[string]Object),
+	}
+}
+
 type List struct {
 	Elems []Object
 }
@@ -175,12 +230,6 @@ func (m *Map) Inspect() string {
 	return out.String()
 }
 func (m *Map) Type() ObjectType { return OBJ_MAP }
-
-// func NewMapObject(entries map[Object]Object) *Map {
-// 	return &Map{
-// 		Entries: entries,
-// 	}
-// }
 
 type Builtin struct {
 	Fn BuiltinFn

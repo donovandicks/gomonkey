@@ -118,6 +118,8 @@ func (l *Lexer) NextToken() token.Token {
 		tok = token.New(token.LT, l.ch)
 	case '>':
 		tok = token.New(token.GT, l.ch)
+	case '.':
+		tok = token.New(token.DOT, l.ch)
 	case '!':
 		if l.peek() == '=' {
 			ch := l.ch

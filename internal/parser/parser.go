@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/donovandicks/gomonkey/internal/ast"
@@ -56,6 +55,7 @@ func NewParser(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.ASSIGN, p.parseInfixExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
+	p.registerInfix(token.DOT, p.parseCallExpression)
 	p.registerInfix(token.LBRACK, p.parseIndexExpression)
 
 	p.readToken()
@@ -105,9 +105,7 @@ func (p *Parser) expectNext(t token.TokenType) bool {
 	return p.nextToken.Type == t
 }
 
-func (p *Parser) parseIdentifier() ast.Expression {
-	return &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
-}
+func (p *Parser) parseIdentifier() ast.Expression { return ast.NewIdentifier(p.currToken.Literal) }
 
 func (p *Parser) parseIntegerLiteral() ast.Expression {
 	lit := &ast.IntegerLiteral{Token: p.currToken}
@@ -167,7 +165,7 @@ func (p *Parser) parseMapLiteral() ast.Expression {
 
 		key := p.parseExpression(LOWEST)
 		if !p.expectNext(token.COLON) {
-			fmt.Printf("exiting map parsing! expected comma after key=%s\n", key.String())
+			p.addError(ErrNextTokenInvalid{expected: token.COMMA, actual: p.nextToken.Type})
 			return nil
 		}
 
@@ -177,7 +175,7 @@ func (p *Parser) parseMapLiteral() ast.Expression {
 
 		m.Entries[key] = val
 		if !p.expectNext(token.RBRACE) && !p.expectNext(token.COMMA) {
-			fmt.Printf("exiting map parsing! expected '}' or comma after value=%s\n", val.String())
+			p.addError(ErrNextTokenInvalid{expected: token.RBRACE, actual: p.nextToken.Type})
 			return nil
 		}
 
@@ -210,6 +208,14 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 	return expr
 }
 
+func (p *Parser) parseAssignmentExpression(operator token.Token, left, right ast.Expression) ast.Expression {
+	return &ast.AssignmentExpression{
+		Token: operator,
+		Left:  left,
+		Right: right,
+	}
+}
+
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	operator := p.currToken
 	prec := p.currPrecedence()
@@ -218,11 +224,7 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	right := p.parseExpression(prec)
 
 	if operator.Type == token.ASSIGN {
-		return &ast.AssignmentExpression{
-			Token: operator,
-			Left:  left.(*ast.Identifier),
-			Right: right,
-		}
+		return p.parseAssignmentExpression(operator, left, right)
 	}
 
 	return &ast.InfixExpression{
@@ -380,10 +382,32 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	return fn
 }
 
-func (p *Parser) parseCallExpression(fn ast.Expression) ast.Expression {
-	expr := &ast.CallExpression{Token: p.currToken, Function: fn}
-	expr.Arguments = p.parseListElements(token.RPAREN)
-	return expr
+func (p *Parser) parseCallExpression(callable ast.Expression) ast.Expression {
+	curr := p.currToken
+	switch curr.Type {
+	case token.LPAREN:
+		expr := &ast.CallExpression{Token: curr, Function: callable}
+		expr.Arguments = p.parseListElements(token.RPAREN)
+		return expr
+	case token.DOT:
+		if !p.expectNext(token.IDENT) {
+			p.addError(ErrNextTokenInvalid{expected: token.IDENT})
+			return nil
+		}
+
+		p.readToken()
+
+		property := p.parseExpression(CALL)
+
+		return &ast.GetExpression{
+			Token: curr,
+			Left:  callable,
+			Right: property,
+		}
+	default:
+		p.addError(ErrParseError{expected: "callable", actual: callable.TokenLiteral()})
+		return nil
+	}
 }
 
 func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
@@ -496,8 +520,9 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 }
 
 func (p *Parser) parseFunctionStatement() ast.Statement {
-	fn := &ast.FunctionStatement{Token: p.currToken}
+	fn := &ast.FunctionStatement{Token: token.NewKeyword("fn")}
 
+	// expect the name of the function
 	if !p.expectNext(token.IDENT) {
 		p.addError(ErrNextTokenInvalid{expected: token.IDENT, actual: p.nextToken.Type})
 		return nil
@@ -505,8 +530,7 @@ func (p *Parser) parseFunctionStatement() ast.Statement {
 
 	p.readToken() // advance to the function name
 
-	ident := p.parseIdentifier()
-	name, ok := ident.(*ast.Identifier)
+	name, ok := p.parseIdentifier().(*ast.Identifier)
 	if !ok {
 		p.addError(ErrParseError{expected: token.IDENT, actual: p.currToken.Literal})
 		return nil
@@ -514,10 +538,11 @@ func (p *Parser) parseFunctionStatement() ast.Statement {
 
 	fn.Name = name
 
-	p.readToken() // advance to the '('
+	p.readToken() // advance to the '(' around the parameters
 
 	fn.Parameters = p.parseFunctionParameters()
 
+	// expect to begin the function body
 	if !p.expectNext(token.LBRACE) {
 		p.addError(ErrMissingOpener{expected: "{"})
 		return nil
@@ -530,7 +555,47 @@ func (p *Parser) parseFunctionStatement() ast.Statement {
 }
 
 func (p *Parser) parseClassStatement() ast.Statement {
-	return nil
+	cs := &ast.ClassStatement{Token: p.currToken}
+	if !p.expectNext(token.IDENT) {
+		p.addError(ErrNextTokenInvalid{expected: token.IDENT, actual: p.nextToken.Type})
+		return nil
+	}
+
+	p.readToken() // advance to the class name
+
+	name, ok := p.parseIdentifier().(*ast.Identifier)
+	if !ok {
+		p.addError(ErrParseError{expected: token.IDENT, actual: string(name.Token.Type)})
+		return nil
+	}
+
+	cs.Name = name
+
+	if !p.expectNext(token.LBRACE) {
+		p.addError(ErrMissingOpener{expected: "{"})
+		return nil
+	}
+
+	p.readToken() // consume the opening brace
+
+	for p.expectNext(token.IDENT) {
+		f := p.parseFunctionStatement()
+		fn, ok := f.(*ast.FunctionStatement)
+		if !ok {
+			return f
+		}
+
+		cs.Methods = append(cs.Methods, fn)
+	}
+
+	if !p.expectNext(token.RBRACE) {
+		p.addError(ErrMissingCloser{expected: "}"})
+		return nil
+	}
+
+	p.readToken() // consume the closing brace
+
+	return cs
 }
 
 func (p *Parser) parseStatement() ast.Statement {

@@ -870,6 +870,135 @@ func TestParser(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "class statement: empty body",
+			input: "class Item {}",
+			expected: []ast.Statement{
+				&ast.ClassStatement{
+					Token:   token.NewKeyword("class"),
+					Name:    ast.NewIdentifier("Item"),
+					Methods: nil,
+				},
+			},
+		},
+		{
+			name: "class statement: one method",
+			input: `
+			class Item {
+				add1(x) {
+					return x + 1;
+				}
+			}`,
+			expected: []ast.Statement{
+				&ast.ClassStatement{
+					Token: token.NewKeyword("class"),
+					Name:  ast.NewIdentifier("Item"),
+					Methods: []*ast.FunctionStatement{
+						{
+							Token:      token.NewKeyword("fn"),
+							Name:       ast.NewIdentifier("add1"),
+							Parameters: []*ast.Identifier{ast.NewIdentifier("x")},
+							Body: &ast.BlockStatement{
+								Token: token.NewKeyword("return"),
+								Statements: []ast.Statement{
+									&ast.ReturnStatement{
+										Token: token.NewKeyword("return"),
+										Value: &ast.InfixExpression{
+											Token:    token.New(token.PLUS, '+'),
+											Left:     ast.NewIdentifier("x"),
+											Operator: "+",
+											Right:    ast.NewIntegerLiteral(1),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "dot operator: <expression>.<identifier>",
+			input: "object.property",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.NewIdent("object"),
+					Expression: &ast.GetExpression{
+						Token: token.NewSpecial("."),
+						Left:  ast.NewIdentifier("object"),
+						Right: ast.NewIdentifier("property"),
+					},
+				},
+			},
+		},
+		{
+			name:  "dot operator: <call>.<identifer>",
+			input: "add().property",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.NewIdent("add"),
+					Expression: &ast.GetExpression{
+						Token: token.NewSpecial("."),
+						Left: &ast.CallExpression{
+							Token:    token.NewSpecial("("),
+							Function: ast.NewIdentifier("add"),
+						},
+						Right: ast.NewIdentifier("property"),
+					},
+				},
+			},
+		},
+		{
+			name:  "dot operator: <identifier>.<call>",
+			input: "object.add()",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.NewIdent("object"),
+					Expression: &ast.CallExpression{
+						Token: token.NewSpecial(token.LPAREN),
+						Function: &ast.GetExpression{
+							Token: token.NewSpecial(token.DOT),
+							Left:  ast.NewIdentifier("object"),
+							Right: ast.NewIdentifier("add"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "dot operator: chaining",
+			input: "parent.child.subchild",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.NewIdent("parent"),
+					Expression: ast.NewGetExpression(
+						ast.NewGetExpression(
+							ast.NewIdentifier("parent"),
+							ast.NewIdentifier("child"),
+						),
+						ast.NewIdentifier("subchild"),
+					),
+				},
+			},
+		},
+		{
+			name:  "dot operator: assignment",
+			input: "parent.child = 1",
+			expected: []ast.Statement{
+				&ast.ExpressionStatement{
+					Token: token.NewIdent("parent"),
+					Expression: &ast.AssignmentExpression{
+						Token: token.NewSpecial(token.ASSIGN),
+						Left: &ast.GetExpression{
+							Token: token.NewSpecial(token.DOT),
+							Left:  ast.NewIdentifier("parent"),
+							Right: ast.NewIdentifier("child"),
+						},
+						Right: ast.NewIntegerLiteral(1),
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range cases {
@@ -1042,6 +1171,11 @@ func TestParser_OperatorPrecedence(t *testing.T) {
 			name:     "index expression",
 			input:    "a + [1, 2, 3][4] + b",
 			expected: "((a + ([1, 2, 3][4])) + b)",
+		},
+		{
+			name:     "get expression",
+			input:    "object.property.method()",
+			expected: "((object.property).method)()",
 		},
 	}
 

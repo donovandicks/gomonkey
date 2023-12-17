@@ -267,18 +267,20 @@ func unwrap(ret object.Object) object.Object {
 	return ret
 }
 
-func applyFunc(f object.Object, args []object.Object) object.Object {
-	switch fn := f.(type) {
+func applyFunc(callable object.Object, args []object.Object) object.Object {
+	switch c := callable.(type) {
+	case *object.Class:
+		return object.NewInstance(c)
 	case *object.Function:
-		newEnv := object.NewEnvFromEnv(fn.Env)
-		for idx, param := range fn.Parameters {
+		newEnv := object.NewEnvFromEnv(c.Env)
+		for idx, param := range c.Parameters {
 			newEnv.Set(param.Value, args[idx])
 		}
-		return unwrap(Eval(fn.Body, newEnv))
+		return unwrap(Eval(c.Body, newEnv))
 	case *object.Builtin:
-		return fn.Fn(args...)
+		return c.Fn(args...)
 	default:
-		return object.NewErr("undefined function '%s'", fn.Type())
+		return object.NewErr("undefined callable '%s'", c.Type())
 	}
 }
 
@@ -315,7 +317,26 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return right
 		}
 
-		return env.Update(node.Left.Value, right)
+		switch left := node.Left.(type) {
+		case *ast.Identifier:
+			return env.Update(left.Value, right)
+		case *ast.GetExpression:
+			evaled := Eval(left.Left, env)
+			inst, ok := evaled.(*object.Instance)
+			if !ok {
+				return object.NewErr("cannot assign field to non-instance type %T", evaled)
+			}
+
+			field, ok := left.Right.(*ast.Identifier)
+			if !ok {
+				return object.NewErr("undefined property %s on %s", left.Right.String(), inst.Inspect())
+			}
+
+			inst.Set(field.String(), right)
+			return right
+		default:
+			object.NewErr("cannot assign to %s (%T)", left, left)
+		}
 	case *ast.InfixExpression:
 		left := Eval(node.Left, env)
 		if object.IsErr(left) {
@@ -362,6 +383,23 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return nil
 	case *ast.FunctionLiteral: // anon func expr
 		return object.NewFunctionObject(nil, node.Parameters, node.Body, env)
+	case *ast.ClassStatement:
+		cls := object.NewClassObject(node.Name, node.Methods, env)
+		env.Set(node.Name.Value, cls)
+		return nil
+	case *ast.GetExpression:
+		obj := Eval(node.Left, env)
+		inst, ok := obj.(*object.Instance)
+		if !ok {
+			return object.NewErr("object %s has no properties", obj.Type())
+		}
+
+		val := inst.Get(node.Right.String())
+		if val == nil {
+			return object.NewErr("object %s has no property %s", inst.Inspect(), node.Right.String())
+		}
+
+		return val
 	case *ast.CallExpression:
 		f := Eval(node.Function, env)
 		if object.IsErr(f) {

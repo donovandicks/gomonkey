@@ -113,11 +113,15 @@ func (fs *FunctionStatement) String() string {
 		params = append(params, param.String())
 	}
 
-	out.WriteString(fs.TokenLiteral())
-	out.WriteString(" ")
-	out.WriteString(fs.Name.String())
-	out.WriteString(fmt.Sprintf("(%s)", strings.Join(params, ", ")))
-	out.WriteString(fs.Body.String())
+	out.WriteString(
+		fmt.Sprintf(
+			"%s %s(%s) %s",
+			fs.TokenLiteral(),
+			fs.Name.String(),
+			strings.Join(params, ", "),
+			fs.Body.String(),
+		),
+	)
 
 	return out.String()
 }
@@ -144,5 +148,22 @@ func (bs *BlockStatement) String() string {
 }
 
 type ClassStatement struct {
-	Token token.Token // the `class` token
+	Token   token.Token // the `class` token
+	Name    *Identifier // the name of the class
+	Methods []*FunctionStatement
+}
+
+func (cs *ClassStatement) statementNode()       {}
+func (cs *ClassStatement) TokenLiteral() string { return cs.Token.Literal }
+func (cs *ClassStatement) String() string {
+	var out strings.Builder
+
+	methods := []string{}
+	for _, m := range cs.Methods {
+		methods = append(methods, m.String())
+	}
+
+	out.WriteString(fmt.Sprintf("class %s {\n%s\n}", cs.Name.String(), strings.Join(methods, "\n")))
+
+	return out.String()
 }

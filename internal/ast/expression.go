@@ -195,20 +195,14 @@ func (ce *CallExpression) String() string {
 
 type AssignmentExpression struct {
 	Token token.Token // identifier token
-	Left  *Identifier
+	Left  Expression
 	Right Expression
 }
 
 func (ae *AssignmentExpression) expressionNode()      {}
 func (ae *AssignmentExpression) TokenLiteral() string { return ae.Token.Literal }
 func (ae *AssignmentExpression) String() string {
-	var out strings.Builder
-
-	out.WriteString(ae.Left.String())
-	out.WriteString(" = ")
-	out.WriteString(ae.Right.String())
-
-	return out.String()
+	return fmt.Sprintf("(%s = %s)", ae.Left.String(), ae.Right.String())
 }
 
 type ListLiteral struct {
@@ -270,4 +264,23 @@ func (ie *IndexExpression) String() string {
 	out.WriteString("])")
 
 	return out.String()
+}
+
+type GetExpression struct {
+	Token token.Token // the '.' token
+	Left  Expression
+	Right Expression // the property to access
+}
+
+func (ge *GetExpression) expressionNode()      {}
+func (ge *GetExpression) TokenLiteral() string { return ge.Token.Literal }
+func (ge *GetExpression) String() string {
+	return fmt.Sprintf("(%s.%s)", ge.Left.String(), ge.Right.String())
+}
+func NewGetExpression(left, right Expression) *GetExpression {
+	return &GetExpression{
+		Token: token.NewSpecial(token.DOT),
+		Left:  left,
+		Right: right,
+	}
 }
