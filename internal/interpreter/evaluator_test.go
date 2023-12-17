@@ -374,3 +374,44 @@ func TestEvaluator_Errors(t *testing.T) {
 		})
 	}
 }
+
+func TestEvaluator_FullPrograms(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name   string
+		input  string
+		output object.Object
+	}{
+		{
+			name: "object oriented",
+			input: `
+			class Item{
+				init(price) {
+					inst.price = price;
+				}
+			}
+
+			let pencil = Item(10)
+			let erasor = Item(5)
+
+			return pencil.price + erasor.price;
+			`,
+			output: object.NewIntegerObject(15),
+		},
+	}
+
+	for _, testCase := range cases {
+		tc := testCase
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			l := lexer.NewLexer(tc.input)
+			p := parser.NewParser(l)
+			prog := p.ParseProgram()
+			env := object.NewEnv()
+
+			assert.Equal(t, tc.output, interpreter.Eval(prog, env))
+		})
+	}
+}

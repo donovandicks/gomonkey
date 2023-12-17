@@ -273,8 +273,8 @@ func applyFunc(callable object.Object, args []object.Object) object.Object {
 		inst := object.NewInstance(c)
 		init := inst.Get("init")
 		if initFn, ok := init.(*object.Function); ok {
-			// Invoke the initializer if one exists
-			applyFunc(initFn, nil)
+			// invoke the init function if one exists
+			applyFunc(initFn, args)
 		}
 		return inst
 	case *object.Function:
