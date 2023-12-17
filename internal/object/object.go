@@ -161,6 +161,7 @@ type Instance struct {
 	class   *Class
 	State   map[string]Object
 	Methods map[string]Object
+	Env     *Environment
 }
 
 func (in *Instance) Inspect() string {
@@ -182,16 +183,20 @@ func (in *Instance) Set(key string, value Object) {
 	in.State[key] = value
 }
 func NewInstance(class *Class) *Instance {
-	methods := make(map[string]Object, len(class.Methods))
-	for _, fn := range class.Methods {
-		methods[fn.Name.String()] = NewFunctionObject(fn.Name, fn.Parameters, fn.Body, class.Env)
+	inst := &Instance{
+		class: class,
+		State: make(map[string]Object),
 	}
 
-	return &Instance{
-		class:   class,
-		State:   make(map[string]Object),
-		Methods: methods,
+	newEnv := NewEnvFromEnv(class.Env)
+	newEnv.Set("inst", inst)
+	methods := make(map[string]Object, len(class.Methods))
+	for _, fn := range class.Methods {
+		methods[fn.Name.String()] = NewFunctionObject(fn.Name, fn.Parameters, fn.Body, newEnv)
 	}
+
+	inst.Methods = methods
+	return inst
 }
 
 type List struct {

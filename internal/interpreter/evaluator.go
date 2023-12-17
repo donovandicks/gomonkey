@@ -389,6 +389,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return nil
 	case *ast.GetExpression:
 		obj := Eval(node.Left, env)
+		if object.IsErr(obj) {
+			return obj
+		}
+
 		inst, ok := obj.(*object.Instance)
 		if !ok {
 			return object.NewErr("object %s has no properties", obj.Type())

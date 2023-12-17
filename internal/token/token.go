@@ -38,6 +38,7 @@ const (
 	WHILE               = "WHILE"
 	FOR                 = "FOR"
 	CLASS               = "CLASS"
+	INST                = "INSTANCE"
 )
 
 var Keywords = map[string]TokenType{
@@ -51,6 +52,7 @@ var Keywords = map[string]TokenType{
 	"while":  WHILE,
 	"for":    FOR,
 	"class":  CLASS,
+	"inst":   INST,
 }
 
 type Token struct {
