@@ -158,8 +158,9 @@ func NewClassObject(
 }
 
 type Instance struct {
-	class *Class
-	State map[string]Object
+	class   *Class
+	State   map[string]Object
+	Methods map[string]Object
 }
 
 func (in *Instance) Inspect() string {
@@ -167,20 +168,29 @@ func (in *Instance) Inspect() string {
 }
 func (in *Instance) Type() ObjectType { return OBJ_INSTANCE }
 func (in *Instance) Get(key string) Object {
-	obj, ok := in.State[key]
-	if !ok {
-		return nil
+	if obj, ok := in.State[key]; ok {
+		return obj
 	}
 
-	return obj
+	if fn, ok := in.Methods[key]; ok {
+		return fn
+	}
+
+	return NewErr("undefined property on %s: %s", in.Inspect(), key)
 }
 func (in *Instance) Set(key string, value Object) {
 	in.State[key] = value
 }
 func NewInstance(class *Class) *Instance {
+	methods := make(map[string]Object, len(class.Methods))
+	for _, fn := range class.Methods {
+		methods[fn.Name.String()] = NewFunctionObject(fn.Name, fn.Parameters, fn.Body, class.Env)
+	}
+
 	return &Instance{
-		class: class,
-		State: make(map[string]Object),
+		class:   class,
+		State:   make(map[string]Object),
+		Methods: methods,
 	}
 }
 
