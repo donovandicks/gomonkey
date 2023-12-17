@@ -270,7 +270,13 @@ func unwrap(ret object.Object) object.Object {
 func applyFunc(callable object.Object, args []object.Object) object.Object {
 	switch c := callable.(type) {
 	case *object.Class:
-		return object.NewInstance(c)
+		inst := object.NewInstance(c)
+		init := inst.Get("init")
+		if initFn, ok := init.(*object.Function); ok {
+			// Invoke the initializer if one exists
+			applyFunc(initFn, nil)
+		}
+		return inst
 	case *object.Function:
 		newEnv := object.NewEnvFromEnv(c.Env)
 		for idx, param := range c.Parameters {
