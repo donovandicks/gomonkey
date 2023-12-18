@@ -5,10 +5,11 @@ import (
 )
 
 type Lexer struct {
-	input   string
-	pos     int  // current position in input (current char)
-	readPos int  // current reading position in input (next char)
-	ch      byte // current char
+	input       string
+	stringCache map[string]token.Token
+	pos         int  // current position in input (current char)
+	readPos     int  // current reading position in input (next char)
+	ch          byte // current char
 }
 
 func isLetter(ch byte) bool {
@@ -20,7 +21,10 @@ func isDigit(ch byte) bool {
 }
 
 func NewLexer(input string) *Lexer {
-	l := &Lexer{input: input}
+	l := &Lexer{
+		input:       input,
+		stringCache: make(map[string]token.Token),
+	}
 	l.readChar()
 	return l
 }
@@ -63,7 +67,7 @@ func (l *Lexer) readNumber() string {
 	return l.input[pos:l.pos]
 }
 
-func (l *Lexer) readString() string {
+func (l *Lexer) readString() token.Token {
 	pos := l.pos + 1 // after the starting quote
 
 	for {
@@ -73,7 +77,12 @@ func (l *Lexer) readString() string {
 		}
 	}
 
-	return l.input[pos:l.pos]
+	str := l.input[pos:l.pos]
+	if t, ok := l.stringCache[str]; ok {
+		return t
+	}
+
+	return token.NewStr(str)
 }
 
 // skipWhitespace advances the lexer over any whitespace characters
@@ -81,6 +90,54 @@ func (l *Lexer) skipWhitespace() {
 	for l.ch == ' ' || l.ch == '\t' || l.ch == '\r' || l.ch == '\n' {
 		l.readChar()
 	}
+}
+
+func (l *Lexer) readSpecial(ch string) token.Token {
+	var tok token.Token
+	switch ch {
+	case ";":
+		tok = token.TokenSemi
+	case "(":
+		tok = token.TokenLParen
+	case ")":
+		tok = token.TokenRParen
+	case ",":
+		tok = token.TokenComma
+	case "+":
+		tok = token.TokenPlus
+	case "-":
+		tok = token.TokenMinus
+	case "/":
+		tok = token.TokenFSlash
+	case "*":
+		tok = token.TokenStar
+	case "<":
+		tok = token.TokenLT
+	case ">":
+		tok = token.TokenGT
+	case ".":
+		tok = token.TokenDot
+	case "{":
+		tok = token.TokenLBrace
+	case "}":
+		tok = token.TokenRBrace
+	case "[":
+		tok = token.TokenLBrack
+	case "]":
+		tok = token.TokenRBrack
+	case ":":
+		tok = token.TokenColon
+	case "=":
+		tok = token.TokenAssign
+	case "==":
+		tok = token.TokenEQ
+	case "!":
+		tok = token.TokenBang
+	case "!=":
+		tok = token.TokenNE
+	}
+
+	return tok
 }
 
 func (l *Lexer) NextToken() token.Token {
@@ -92,53 +149,23 @@ func (l *Lexer) NextToken() token.Token {
 	case '=':
 		if l.peek() == '=' {
 			l.readChar()
-			tok = token.NewSpecial(token.EQ)
+			tok = l.readSpecial("==")
 		} else {
-			tok = token.NewSpecial(token.ASSIGN)
+			tok = l.readSpecial("=")
 		}
-	case ';':
-		tok = token.NewSpecial(token.SEMICOLON)
-	case '(':
-		tok = token.NewSpecial(token.LPAREN)
-	case ')':
-		tok = token.NewSpecial(token.RPAREN)
-	case ',':
-		tok = token.NewSpecial(token.COMMA)
-	case '+':
-		tok = token.NewSpecial(token.PLUS)
-	case '-':
-		tok = token.NewSpecial(token.MINUS)
-	case '/':
-		tok = token.NewSpecial(token.FSLASH)
-	case '*':
-		tok = token.NewSpecial(token.STAR)
-	case '<':
-		tok = token.NewSpecial(token.LT)
-	case '>':
-		tok = token.NewSpecial(token.GT)
-	case '.':
-		tok = token.NewSpecial(token.DOT)
 	case '!':
 		if l.peek() == '=' {
 			l.readChar()
-			tok = token.NewSpecial(token.NE)
+			tok = l.readSpecial("!=")
 		} else {
-			tok = token.NewSpecial(token.BANG)
+			tok = l.readSpecial("!")
 		}
-	case '{':
-		tok = token.NewSpecial(token.LBRACE)
-	case '}':
-		tok = token.NewSpecial(token.RBRACE)
-	case '[':
-		tok = token.NewSpecial(token.LBRACK)
-	case ']':
-		tok = token.NewSpecial(token.RBRACK)
+	case ';', '(', ')', ',', '+', '-', '/', '*', '<', '>', '.', '{', '}', '[', ']', ':':
+		tok = l.readSpecial(string(l.ch))
 	case '"':
-		tok = token.NewStr(l.readString())
-	case ':':
-		tok = token.NewSpecial(token.COLON)
+		tok = l.readString()
 	case 0:
-		tok = token.NewEOF()
+		tok = token.TokenEOF
 	default:
 		if isLetter(l.ch) {
 			tok.Literal = l.readIdentifier()

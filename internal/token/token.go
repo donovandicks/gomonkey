@@ -41,19 +41,43 @@ const (
 	INST                = "INSTANCE"
 )
 
-var Keywords = map[string]TokenType{
-	"fn":     FUNCTION,
-	"let":    LET,
-	"return": RETURN,
-	"if":     IF,
-	"else":   ELSE,
-	"true":   TRUE,
-	"false":  FALSE,
-	"while":  WHILE,
-	"for":    FOR,
-	"class":  CLASS,
-	"inst":   INST,
-}
+var (
+	Keywords = map[string]TokenType{
+		"fn":     FUNCTION,
+		"let":    LET,
+		"return": RETURN,
+		"if":     IF,
+		"else":   ELSE,
+		"true":   TRUE,
+		"false":  FALSE,
+		"while":  WHILE,
+		"for":    FOR,
+		"class":  CLASS,
+		"inst":   INST,
+	}
+
+	TokenEOF    Token = Token{Type: EOF, Literal: ""}
+	TokenSemi         = Token{Type: SEMICOLON, Literal: ";"}
+	TokenLParen       = Token{Type: LPAREN, Literal: "("}
+	TokenRParen       = Token{Type: RPAREN, Literal: ")"}
+	TokenComma        = Token{Type: COMMA, Literal: ","}
+	TokenPlus         = Token{Type: PLUS, Literal: "+"}
+	TokenMinus        = Token{Type: MINUS, Literal: "-"}
+	TokenFSlash       = Token{Type: FSLASH, Literal: "/"}
+	TokenStar         = Token{Type: STAR, Literal: "*"}
+	TokenLT           = Token{Type: LT, Literal: "<"}
+	TokenGT           = Token{Type: GT, Literal: ">"}
+	TokenDot          = Token{Type: DOT, Literal: "."}
+	TokenLBrace       = Token{Type: LBRACE, Literal: "{"}
+	TokenRBrace       = Token{Type: RBRACE, Literal: "}"}
+	TokenLBrack       = Token{Type: LBRACK, Literal: "["}
+	TokenRBrack       = Token{Type: RBRACK, Literal: "]"}
+	TokenColon        = Token{Type: COLON, Literal: ":"}
+	TokenAssign       = Token{Type: ASSIGN, Literal: "="}
+	TokenEQ           = Token{Type: EQ, Literal: "=="}
+	TokenBang         = Token{Type: BANG, Literal: "!"}
+	TokenNE           = Token{Type: NE, Literal: "!="}
+)
 
 type Token struct {
 	Type    TokenType
@@ -74,7 +98,6 @@ func NewKeyword(kw string) Token {
 }
 
 func NewSpecial(tt TokenType) Token { return Token{Type: tt, Literal: string(tt)} }
-func NewEOF() Token                 { return Token{Type: EOF, Literal: ""} }
 func NewIdent(val string) Token     { return Token{Type: IDENT, Literal: val} }
 func NewInt(val string) Token       { return Token{Type: INT, Literal: val} }
 func NewStr(val string) Token       { return Token{Type: STRING, Literal: val} }

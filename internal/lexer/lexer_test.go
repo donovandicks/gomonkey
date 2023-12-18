@@ -112,7 +112,7 @@ func TestNextToken(t *testing.T) {
 				token.NewIdent("ten"),
 				token.NewSpecial(token.RPAREN),
 				token.NewSpecial(token.SEMICOLON),
-				token.NewEOF(),
+				token.TokenEOF,
 			},
 		},
 		{
@@ -121,6 +121,15 @@ func TestNextToken(t *testing.T) {
 			expTokens: []token.Token{
 				token.NewStr("hello, world!"),
 				token.NewStr("one"),
+			},
+		},
+		{
+			name:  "strings: multiple same",
+			input: `"hello" "hello" "hello"`,
+			expTokens: []token.Token{
+				token.NewStr("hello"),
+				token.NewStr("hello"),
+				token.NewStr("hello"),
 			},
 		},
 	}
