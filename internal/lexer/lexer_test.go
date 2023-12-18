@@ -59,9 +59,9 @@ func TestNextToken(t *testing.T) {
 			input: "= == ! !=",
 			expTokens: []token.Token{
 				token.NewSpecial(token.ASSIGN),
-				{Type: token.EQ, Literal: "=="},
+				token.NewSpecial(token.EQ),
 				token.NewSpecial(token.BANG),
-				{Type: token.NE, Literal: "!="},
+				token.NewSpecial(token.NE),
 			},
 		},
 		{
