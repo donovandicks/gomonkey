@@ -74,8 +74,10 @@ func NewKeyword(kw string) Token {
 }
 
 func NewSpecial(tt TokenType) Token { return Token{Type: tt, Literal: string(tt)} }
-
-func NewIdent(val string) Token { return Token{Type: IDENT, Literal: val} }
+func NewEOF() Token                 { return Token{Type: EOF, Literal: ""} }
+func NewIdent(val string) Token     { return Token{Type: IDENT, Literal: val} }
+func NewInt(val string) Token       { return Token{Type: INT, Literal: val} }
+func NewStr(val string) Token       { return Token{Type: STRING, Literal: val} }
 
 func LookupIdent(ident string) TokenType {
 	if tok, ok := Keywords[ident]; ok {
