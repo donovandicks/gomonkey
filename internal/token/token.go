@@ -97,10 +97,9 @@ func NewKeyword(kw string) Token {
 	return Token{Type: tt, Literal: kw}
 }
 
-func NewSpecial(tt TokenType) Token { return Token{Type: tt, Literal: string(tt)} }
-func NewIdent(val string) Token     { return Token{Type: IDENT, Literal: val} }
-func NewInt(val string) Token       { return Token{Type: INT, Literal: val} }
-func NewStr(val string) Token       { return Token{Type: STRING, Literal: val} }
+func NewIdent(val string) Token { return Token{Type: IDENT, Literal: val} }
+func NewInt(val string) Token   { return Token{Type: INT, Literal: val} }
+func NewStr(val string) Token   { return Token{Type: STRING, Literal: val} }
 
 func LookupIdent(ident string) TokenType {
 	if tok, ok := Keywords[ident]; ok {

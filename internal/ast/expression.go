@@ -279,7 +279,7 @@ func (ge *GetExpression) String() string {
 }
 func NewGetExpression(left, right Expression) *GetExpression {
 	return &GetExpression{
-		Token: token.NewSpecial(token.DOT),
+		Token: token.TokenDot,
 		Left:  left,
 		Right: right,
 	}

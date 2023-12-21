@@ -924,7 +924,7 @@ func TestParser(t *testing.T) {
 				&ast.ExpressionStatement{
 					Token: token.NewIdent("object"),
 					Expression: &ast.GetExpression{
-						Token: token.NewSpecial("."),
+						Token: token.TokenDot,
 						Left:  ast.NewIdentifier("object"),
 						Right: ast.NewIdentifier("property"),
 					},
@@ -938,9 +938,9 @@ func TestParser(t *testing.T) {
 				&ast.ExpressionStatement{
 					Token: token.NewIdent("add"),
 					Expression: &ast.GetExpression{
-						Token: token.NewSpecial("."),
+						Token: token.TokenDot,
 						Left: &ast.CallExpression{
-							Token:    token.NewSpecial("("),
+							Token:    token.TokenLParen,
 							Function: ast.NewIdentifier("add"),
 						},
 						Right: ast.NewIdentifier("property"),
@@ -955,9 +955,9 @@ func TestParser(t *testing.T) {
 				&ast.ExpressionStatement{
 					Token: token.NewIdent("object"),
 					Expression: &ast.CallExpression{
-						Token: token.NewSpecial(token.LPAREN),
+						Token: token.TokenLParen,
 						Function: &ast.GetExpression{
-							Token: token.NewSpecial(token.DOT),
+							Token: token.TokenDot,
 							Left:  ast.NewIdentifier("object"),
 							Right: ast.NewIdentifier("add"),
 						},
@@ -988,9 +988,9 @@ func TestParser(t *testing.T) {
 				&ast.ExpressionStatement{
 					Token: token.NewIdent("parent"),
 					Expression: &ast.AssignmentExpression{
-						Token: token.NewSpecial(token.ASSIGN),
+						Token: token.TokenAssign,
 						Left: &ast.GetExpression{
-							Token: token.NewSpecial(token.DOT),
+							Token: token.TokenDot,
 							Left:  ast.NewIdentifier("parent"),
 							Right: ast.NewIdentifier("child"),
 						},
